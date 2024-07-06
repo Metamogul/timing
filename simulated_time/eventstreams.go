@@ -29,7 +29,7 @@ type singleEventStream struct {
 	*event
 }
 
-func newSingleEventStream(action func(), actionTime time.Time, scheduler eventScheduler) singleEventStream {
+func newSingleEventStream(action action, actionTime time.Time, scheduler eventScheduler) singleEventStream {
 	return singleEventStream{
 		event: newEvent(action, actionTime, scheduler),
 	}
@@ -63,7 +63,7 @@ func (s *singleEventStream) closed() bool {
 /////////////////////////
 
 type multiEventsStream struct {
-	action    func()
+	action    action
 	from      time.Time
 	to        time.Time
 	interval  time.Duration
@@ -72,7 +72,7 @@ type multiEventsStream struct {
 	currentEvent *event
 }
 
-func newMultiEventsStream(action func(), from, to time.Time, interval time.Duration, scheduler eventScheduler) multiEventsStream {
+func newMultiEventsStream(action action, from, to time.Time, interval time.Duration, scheduler eventScheduler) multiEventsStream {
 	firstEvent := newEvent(action, from, scheduler)
 
 	return multiEventsStream{

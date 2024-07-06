@@ -3,22 +3,34 @@ package simulated_time
 
 import (
 	"github.com/metamogul/timing"
-	"sync"
 	"time"
 )
 
 type eventScheduler interface {
 	timing.Clock
-	eventCompletionWaitGroup() *sync.WaitGroup
+	eventCompletionWaitGroupAdd(delta int)
+	eventCompletionWaitGroupDone()
+}
+
+type action interface {
+	perform()
 }
 
 type event struct {
-	action     func()
+	action     action
 	actionTime time.Time
 	scheduler  eventScheduler
 }
 
-func newEvent(action func(), actionTime time.Time, scheduler eventScheduler) *event {
+func newEvent(action action, actionTime time.Time, scheduler eventScheduler) *event {
+	if action == nil {
+		panic("action can't be nil")
+	}
+
+	if scheduler == nil {
+		panic("scheduler can't be nil")
+	}
+
 	return &event{
 		action:     action,
 		actionTime: actionTime,
@@ -31,10 +43,10 @@ func (e *event) performAsync() {
 		panic("trying to perform event ahead of actionTime")
 	}
 
-	e.scheduler.eventCompletionWaitGroup().Add(1)
+	e.scheduler.eventCompletionWaitGroupAdd(1)
 	go func() {
-		e.action()
-		e.scheduler.eventCompletionWaitGroup().Done()
+		e.action.perform()
+		e.scheduler.eventCompletionWaitGroupDone()
 	}()
 }
 
@@ -43,5 +55,5 @@ func (e *event) perform() {
 		panic("trying to perform event ahead of actionTime")
 	}
 
-	e.action()
+	e.action.perform()
 }

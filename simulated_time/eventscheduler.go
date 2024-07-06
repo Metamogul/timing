@@ -47,6 +47,10 @@ func (e *EventScheduler) DoRepeatedly(interval time.Duration, f func()) {
 
 }
 
-func (e *EventScheduler) eventCompletionWaitGroup() *sync.WaitGroup {
-	return &e.wg
+func (e *EventScheduler) eventCompletionWaitGroupAdd(delta int) {
+	e.wg.Add(delta)
+}
+
+func (e *EventScheduler) eventCompletionWaitGroupDone() {
+	e.wg.Done()
 }
