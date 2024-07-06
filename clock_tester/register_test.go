@@ -8,25 +8,23 @@ import (
 )
 
 func Test_incrementAfterOneMinute(t *testing.T) {
-	mockClock := simulated_time.NewEventScheduler()
-	mockClock.Set(time.Now())
+	mockClock := simulated_time.NewEventScheduler(time.Now())
 
 	r := &register{}
 
 	incrementAfterOneMinute(r, mockClock)
 
-	mockClock.Add(time.Minute * 15)
+	mockClock.Forward(time.Minute * 15)
 	require.Equal(t, 1, r.counter)
 }
 
 func Test_incrementEveryMinute(t *testing.T) {
-	mockClock := simulated_time.NewEventScheduler()
-	mockClock.Set(time.Now())
+	mockClock := simulated_time.NewEventScheduler(time.Now())
 
 	r := &register{}
 
 	incrementEveryMinute(r, mockClock)
 
-	mockClock.Add(time.Minute * 15)
+	mockClock.Forward(time.Minute * 15)
 	require.Equal(t, 15, r.counter)
 }

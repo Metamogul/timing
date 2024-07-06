@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"github.com/metamogul/timing"
 	"sync"
 	"time"
 )
@@ -29,9 +30,9 @@ func (e *EventScheduler) Forward(duration time.Duration) {
 	}*/
 }
 
-// DoAfter spawns a go routine and unblocks it after duration. Don't use
+// PerformAfter spawns a go routine and unblocks it after duration. Don't use
 // to repeatedly call f, but use DoRepeatedly instead.
-func (e *EventScheduler) DoAfter(duration time.Duration, f func()) {
+func (e *EventScheduler) PerformAfter(duration time.Duration, action timing.Action) {
 	/*e.wg.Add(1)
 
 	e.timedCall = append(e.timedCall, e.newDelayedCall(duration, f))
@@ -41,16 +42,18 @@ func (e *EventScheduler) DoAfter(duration time.Duration, f func()) {
 	*/
 }
 
-// DoRepeatedly spawns a go routine and unblocks if periodically every
+// PerformRepeatedly spawns a go routine and unblocks if periodically every
 // waiting for interval.
-func (e *EventScheduler) DoRepeatedly(interval time.Duration, f func()) {
+func (e *EventScheduler) PerformRepeatedly(interval time.Duration, action timing.Action) {
 
 }
 
+// eventCompletionWaitGroupAdd add the given delta to the schedulers sync.WaitGroup.
 func (e *EventScheduler) eventCompletionWaitGroupAdd(delta int) {
 	e.wg.Add(delta)
 }
 
+// eventCompletionWaitGroupDone signals the schedulers sync.WaitGroup.
 func (e *EventScheduler) eventCompletionWaitGroupDone() {
 	e.wg.Done()
 }

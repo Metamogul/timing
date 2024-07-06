@@ -10,14 +10,14 @@ type register struct {
 }
 
 func incrementAfterOneMinute(register *register, scheduler timing.EventScheduler) {
-	scheduler.DoAfter(time.Minute, func() {
+	scheduler.PerformAfter(time.Minute, func() {
 		time.Sleep(time.Microsecond * 1120)
 		register.counter++
 	})
 }
 
 func incrementEveryMinute(register *register, scheduler timing.EventScheduler) {
-	scheduler.DoRepeatedly(time.Minute, func() {
+	scheduler.PerformAfter(time.Minute, func() {
 		time.Sleep(time.Microsecond * 1120)
 		register.counter++
 	})

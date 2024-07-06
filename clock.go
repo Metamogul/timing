@@ -8,10 +8,10 @@ type Clock interface {
 
 type Action func()
 
-func (s Action) perform() { s() }
+func (a Action) perform() { a() }
 
 type EventScheduler interface {
 	Clock
-	DoAfter(time.Duration, Action)
-	DoRepeatedly(time.Duration, Action)
+	PerformAfter(time.Duration, Action)
+	PerformRepeatedly(time.Duration, Action)
 }

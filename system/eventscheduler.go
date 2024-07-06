@@ -1,6 +1,7 @@
 package system
 
 import (
+	"github.com/metamogul/timing"
 	"time"
 )
 
@@ -10,19 +11,21 @@ func (s *Clock) Now() time.Time {
 	return time.Now()
 }
 
-type EventScheduler struct{}
-
-func (s *EventScheduler) DoAfter(duration time.Duration, f func()) {
-	time.AfterFunc(duration, f)
+type EventScheduler struct {
+	Clock
 }
 
-func (s *EventScheduler) DoRepeatedly(duration time.Duration, f func()) {
-	ticker := time.NewTicker(500 * time.Millisecond)
+func (s *EventScheduler) PerformAfter(duration time.Duration, action timing.Action) {
+	time.AfterFunc(duration, action)
+}
+
+func (s *EventScheduler) PerformRepeatedly(duration time.Duration, action timing.Action) {
+	ticker := time.NewTicker(duration)
 
 	go func() {
 		for {
 			<-ticker.C
-			f()
+			action()
 		}
 	}()
 }
