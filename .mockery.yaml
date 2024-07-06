@@ -1,0 +1,9 @@
+#file: noinspection SpellCheckingInspection
+packages:
+  github.com/metamogul/timing/simulated_time:
+    config:
+      with-expecter: true
+      dir: "."
+      inpackage: true
+    interfaces:
+      eventScheduler:
