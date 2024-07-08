@@ -166,7 +166,6 @@ func Test_event_performAsync(t *testing.T) {
 			fields: fields{
 				action: func() action {
 					mockedAction := NewMockaction(t)
-
 					mockedAction.EXPECT().
 						perform().
 						Once()
@@ -230,7 +229,7 @@ func Test_event_performAsync(t *testing.T) {
 			}
 
 			if tt.requirePanic {
-				require.Panics(t, e.perform)
+				require.Panics(t, e.performAsync)
 				return
 			}
 
