@@ -47,13 +47,3 @@ func (e *EventScheduler) PerformAfter(duration time.Duration, action timing.Acti
 func (e *EventScheduler) PerformRepeatedly(interval time.Duration, action timing.Action) {
 
 }
-
-// eventCompletionWaitGroupAdd add the given delta to the schedulers sync.WaitGroup.
-func (e *EventScheduler) eventCompletionWaitGroupAdd(delta int) {
-	e.wg.Add(delta)
-}
-
-// eventCompletionWaitGroupDone signals the schedulers sync.WaitGroup.
-func (e *EventScheduler) eventCompletionWaitGroupDone() {
-	e.wg.Done()
-}

@@ -3,8 +3,7 @@ packages:
   github.com/metamogul/timing/simulated_time:
     config:
       with-expecter: true
-      dir: "."
+      dir: "{{.InterfaceDir}}"
       inpackage: true
     interfaces:
-      eventScheduler:
       action:
