@@ -19,6 +19,14 @@ func NewEventScheduler(now time.Time) *EventScheduler {
 }
 
 func (e *EventScheduler) Forward(duration time.Duration) {
+	/*
+
+		- set new time of clock
+		- while peek event time before current time:
+			- add one to wait group
+			- dispatch new event in go routine and wait with waitgroup
+	*/
+
 	/*e.now.Add(duration)
 	// forward all timers as much as needed:
 	for {

@@ -7,3 +7,4 @@ packages:
       inpackage: true
     interfaces:
       action:
+      eventGenerator:
