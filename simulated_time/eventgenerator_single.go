@@ -1,12 +1,15 @@
 package simulated_time
 
-import "time"
+import (
+	"github.com/metamogul/timing"
+	"time"
+)
 
 type singleEventGenerator struct {
 	*event
 }
 
-func newSingleEventGenerator(action action, time time.Time) *singleEventGenerator {
+func newSingleEventGenerator(action timing.Action, time time.Time) *singleEventGenerator {
 	return &singleEventGenerator{
 		event: newEvent(action, time),
 	}

@@ -6,5 +6,5 @@ packages:
       dir: "{{.InterfaceDir}}"
       inpackage: true
     interfaces:
-      action:
+      Action:
       eventGenerator:

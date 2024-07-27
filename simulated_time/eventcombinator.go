@@ -23,13 +23,20 @@ func newEventCombinator(inputs ...eventGenerator) *eventCombinator {
 		}
 	}
 
-	if len(combinator.inputs) == 0 {
-		panic("must provide at least one inputs input that is not finished")
-	}
-
 	combinator.sortInputs()
 
 	return combinator
+}
+
+func (e *eventCombinator) addInput(input eventGenerator) {
+	if input.finished() {
+		e.finishedInputs = append(e.finishedInputs, input)
+		return
+	}
+
+	e.inputs = append(e.inputs, input)
+
+	e.sortInputs()
 }
 
 func (e *eventCombinator) pop() *event {

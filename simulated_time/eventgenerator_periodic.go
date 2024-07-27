@@ -1,9 +1,12 @@
 package simulated_time
 
-import "time"
+import (
+	"github.com/metamogul/timing"
+	"time"
+)
 
 type periodicEventGenerator struct {
-	action   action
+	action   timing.Action
 	from     time.Time
 	to       *time.Time
 	interval time.Duration
@@ -12,13 +15,13 @@ type periodicEventGenerator struct {
 }
 
 func newPeriodicEventGenerator(
-	action action,
+	action timing.Action,
 	from time.Time,
 	to *time.Time,
 	interval time.Duration,
 ) *periodicEventGenerator {
 	if action == nil {
-		panic("action can't be nil")
+		panic("Action can't be nil")
 	}
 
 	if to != nil && !to.After(from) {
@@ -68,5 +71,5 @@ func (p *periodicEventGenerator) finished() bool {
 		return false
 	}
 
-	return !p.currentEvent.Add(p.interval).Before(*p.to)
+	return p.currentEvent.Add(p.interval).After(*p.to)
 }

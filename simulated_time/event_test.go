@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
@@ -11,7 +12,7 @@ func Test_newEvent(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		action     action
+		action     timing.Action
 		actionTime time.Time
 	}
 
@@ -22,7 +23,7 @@ func Test_newEvent(t *testing.T) {
 		requirePanic bool
 	}{
 		{
-			name: "no action",
+			name: "no Action",
 			args: args{
 				action:     nil,
 				actionTime: time.Time{},
@@ -32,11 +33,11 @@ func Test_newEvent(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				action:     NewMockaction(t),
+				action:     NewMockAction(t),
 				actionTime: time.Time{},
 			},
 			want: &event{
-				action: NewMockaction(t),
+				Action: NewMockAction(t),
 				Time:   time.Time{},
 			},
 		},
@@ -62,10 +63,10 @@ func Test_event_perform(t *testing.T) {
 	t.Parallel()
 
 	e := &event{
-		action: func() action {
-			mockedAction := NewMockaction(t)
+		Action: func() timing.Action {
+			mockedAction := NewMockAction(t)
 			mockedAction.EXPECT().
-				perform().
+				Perform().
 				Once()
 
 			return mockedAction
@@ -73,5 +74,5 @@ func Test_event_perform(t *testing.T) {
 		Time: time.Time{},
 	}
 
-	e.perform()
+	e.Perform()
 }

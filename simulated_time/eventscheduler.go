@@ -7,51 +7,66 @@ import (
 )
 
 type EventScheduler struct {
-	*Clock
+	*clock
+
+	eventGenerators   *eventCombinator
+	eventGeneratorsMu sync.RWMutex
 
 	wg sync.WaitGroup
 }
 
 func NewEventScheduler(now time.Time) *EventScheduler {
 	return &EventScheduler{
-		Clock: NewClock(now),
+		clock:           newClock(now),
+		eventGenerators: newEventCombinator(),
 	}
 }
 
-func (e *EventScheduler) Forward(duration time.Duration) {
-	/*
+func (e *EventScheduler) Forward(interval time.Duration) {
+	targetTime := e.clock.Now().Add(interval)
 
-		- set new time of clock
-		- while peek event time before current time:
-			- add one to wait group
-			- dispatch new event in go routine and wait with waitgroup
-	*/
+	for e.dispatchNextEvent(targetTime) {
+	}
 
-	/*e.now.Add(duration)
-	// forward all timers as much as needed:
-	for {
-		slices.SortStableFunc(e.timedCall, func(a, b *timedCalls) int {
-			return a.performAt.Compare(b.performAt)
-		})
-		// pop next timer and forward until not possible anymore
-
-	}*/
+	e.wg.Wait()
 }
 
-// PerformAfter spawns a go routine and unblocks it after duration. Don't use
-// to repeatedly call f, but use DoRepeatedly instead.
-func (e *EventScheduler) PerformAfter(duration time.Duration, action timing.Action) {
-	/*e.wg.Add(1)
+func (e *EventScheduler) dispatchNextEvent(targetTime time.Time) (shouldContinue bool) {
+	e.eventGeneratorsMu.RLock()
+	defer e.eventGeneratorsMu.RUnlock()
 
-	e.timedCall = append(e.timedCall, e.newDelayedCall(duration, f))
-	// Block caller until ready
-	// Block EventScheduler if call was in the past -> use wg
-	// Release EventScheduler if call is in the future -> use wg
-	*/
+	if e.eventGenerators.finished() {
+		e.clock.Set(targetTime)
+		return false
+	}
+
+	if e.eventGenerators.peek().After(targetTime) {
+		e.clock.Set(targetTime)
+		return false
+	}
+
+	nextEvent := e.eventGenerators.pop()
+	e.clock.Set(nextEvent.Time)
+
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		nextEvent.Perform()
+	}()
+
+	return true
 }
 
-// PerformRepeatedly spawns a go routine and unblocks if periodically every
-// waiting for interval.
-func (e *EventScheduler) PerformRepeatedly(interval time.Duration, action timing.Action) {
+func (e *EventScheduler) PerformAfter(action timing.Action, interval time.Duration) {
+	e.eventGeneratorsMu.Lock()
+	defer e.eventGeneratorsMu.Unlock()
 
+	e.eventGenerators.addInput(newSingleEventGenerator(action, e.now.Add(interval)))
+}
+
+func (e *EventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration) {
+	e.eventGeneratorsMu.Lock()
+	defer e.eventGeneratorsMu.Unlock()
+
+	e.eventGenerators.addInput(newPeriodicEventGenerator(action, e.Now(), until, interval))
 }

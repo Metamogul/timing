@@ -2,25 +2,22 @@
 package simulated_time
 
 import (
+	"github.com/metamogul/timing"
 	"time"
 )
 
-type action interface {
-	perform()
-}
-
 type event struct {
-	action
+	timing.Action
 	time.Time
 }
 
-func newEvent(action action, time time.Time) *event {
+func newEvent(action timing.Action, time time.Time) *event {
 	if action == nil {
 		panic("action can't be nil")
 	}
 
 	return &event{
-		action: action,
+		Action: action,
 		Time:   time,
 	}
 }

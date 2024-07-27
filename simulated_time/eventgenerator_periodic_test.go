@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
@@ -11,7 +12,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		action   action
+		action   timing.Action
 		from     time.Time
 		to       *time.Time
 		interval time.Duration
@@ -24,7 +25,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		requirePanic bool
 	}{
 		{
-			name: "no action",
+			name: "no Action",
 			args: args{
 				action:   nil,
 				from:     time.Time{},
@@ -36,7 +37,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		{
 			name: "to before from",
 			args: args{
-				action:   NewMockaction(t),
+				action:   NewMockAction(t),
 				from:     time.Time{}.Add(time.Second),
 				to:       ptr(time.Time{}),
 				interval: time.Second,
@@ -46,7 +47,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		{
 			name: "to equals from",
 			args: args{
-				action:   NewMockaction(t),
+				action:   NewMockAction(t),
 				from:     time.Time{}.Add(time.Second),
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: time.Second,
@@ -56,7 +57,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		{
 			name: "interval is zero",
 			args: args{
-				action:   NewMockaction(t),
+				action:   NewMockAction(t),
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: 0,
@@ -66,7 +67,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		{
 			name: "interval is too long",
 			args: args{
-				action:   NewMockaction(t),
+				action:   NewMockAction(t),
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: time.Second * 2,
@@ -76,19 +77,19 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				action:   NewMockaction(t),
+				action:   NewMockAction(t),
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(2 * time.Second)),
 				interval: time.Second,
 			},
 			want: &periodicEventGenerator{
-				action:   NewMockaction(t),
+				action:   NewMockAction(t),
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(2 * time.Second)),
 				interval: time.Second,
 
 				currentEvent: &event{
-					action: NewMockaction(t),
+					Action: NewMockAction(t),
 					Time:   time.Time{}.Add(time.Second),
 				},
 			},
@@ -117,7 +118,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		action       action
+		action       timing.Action
 		from         time.Time
 		to           *time.Time
 		interval     time.Duration
@@ -134,35 +135,46 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 		{
 			name: "already finished",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(55*time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(55*time.Second)),
 			},
 			requirePanic: true,
 		},
 		{
-			name: "success, not finished",
+			name: "success, not finished 1",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           nil,
 				interval:     time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(time.Second)),
 			},
-			want: newEvent(NewMockaction(t), time.Time{}.Add(time.Second)),
+			want: newEvent(NewMockAction(t), time.Time{}.Add(time.Second)),
+		},
+		{
+			name: "success, not finished 2",
+			fields: fields{
+				action:       NewMockAction(t),
+				from:         time.Time{},
+				to:           ptr(time.Time{}.Add(time.Minute)),
+				interval:     10 * time.Second,
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(40*time.Second)),
+			},
+			want: newEvent(NewMockAction(t), time.Time{}.Add(40*time.Second)),
 		},
 		{
 			name: "success, finished",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(40*time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(50*time.Second)),
 			},
-			want:            newEvent(NewMockaction(t), time.Time{}.Add(40*time.Second)),
+			want:            newEvent(NewMockAction(t), time.Time{}.Add(50*time.Second)),
 			requireFinished: true,
 		},
 	}
@@ -202,7 +214,7 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		action       action
+		action       timing.Action
 		from         time.Time
 		to           *time.Time
 		interval     time.Duration
@@ -218,24 +230,24 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 		{
 			name: "already finished",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(55*time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(55*time.Second)),
 			},
 			requirePanic: true,
 		},
 		{
 			name: "success",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           nil,
 				interval:     time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(time.Second)),
 			},
-			want: *newEvent(NewMockaction(t), time.Time{}.Add(time.Second)),
+			want: *newEvent(NewMockAction(t), time.Time{}.Add(time.Second)),
 		},
 	}
 
@@ -271,7 +283,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		action       action
+		action       timing.Action
 		from         time.Time
 		to           *time.Time
 		interval     time.Duration
@@ -286,33 +298,33 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 		{
 			name: "never finished",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           nil,
 				interval:     0,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}),
 			},
 			want: false,
 		},
 		{
 			name: "not finished yet",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(45*time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(45*time.Second)),
 			},
 			want: false,
 		},
 		{
 			name: "finished",
 			fields: fields{
-				action:       NewMockaction(t),
+				action:       NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(NewMockaction(t), time.Time{}.Add(55*time.Second)),
+				currentEvent: newEvent(NewMockAction(t), time.Time{}.Add(55*time.Second)),
 			},
 			want: true,
 		},

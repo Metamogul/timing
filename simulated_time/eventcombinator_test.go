@@ -16,11 +16,12 @@ func Test_newEventCombinator(t *testing.T) {
 		inputs            func() []eventGenerator
 		lenInputs         int
 		lenFinishedInputs int
-		requirePanic      bool
 	}{
 		{
-			name:         "no inputs passed",
-			requirePanic: true,
+			name:              "no inputs passed",
+			inputs:            func() []eventGenerator { return nil },
+			lenInputs:         0,
+			lenFinishedInputs: 0,
 		},
 		{
 			name: "all inputs finished",
@@ -35,7 +36,6 @@ func Test_newEventCombinator(t *testing.T) {
 			},
 			lenInputs:         0,
 			lenFinishedInputs: 1,
-			requirePanic:      true,
 		},
 		{
 			name: "two mixed inputs",
@@ -71,7 +71,7 @@ func Test_newEventCombinator(t *testing.T) {
 				mockEventGenerator1.EXPECT().
 					peek().
 					Return(event{
-						action: noAction{},
+						Action: NewMockAction(t),
 						Time:   time.Time{},
 					}).
 					Maybe()
@@ -84,7 +84,7 @@ func Test_newEventCombinator(t *testing.T) {
 				mockEventGenerator2.EXPECT().
 					peek().
 					Return(event{
-						action: noAction{},
+						Action: NewMockAction(t),
 						Time:   time.Time{}.Add(time.Second),
 					}).
 					Maybe()
@@ -103,13 +103,6 @@ func Test_newEventCombinator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if tt.requirePanic {
-				require.Panics(t, func() {
-					_ = newEventCombinator(tt.inputs()...)
-				})
-				return
-			}
-
 			got := newEventCombinator(tt.inputs()...)
 
 			require.NotNil(t, got.inputs)
@@ -117,6 +110,82 @@ func Test_newEventCombinator(t *testing.T) {
 
 			require.Len(t, got.inputs, tt.lenInputs)
 			require.Len(t, got.finishedInputs, tt.lenFinishedInputs)
+
+			sorted := slices.IsSortedFunc(got.inputs, func(a, b eventGenerator) int {
+				return a.peek().Time.Compare(b.peek().Time)
+			})
+			require.True(t, sorted)
+		})
+	}
+}
+
+func Test_eventCombinator_addInput(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		inputs         []eventGenerator
+		finishedInputs []eventGenerator
+	}
+
+	tests := []struct {
+		name            string
+		fields          fields
+		input           func() eventGenerator
+		inputIsFinished bool
+	}{
+		{
+			name:   "input finished",
+			fields: fields{inputs: []eventGenerator{}, finishedInputs: []eventGenerator{}},
+			input: func() eventGenerator {
+				mockEventGenerator := NewMockeventGenerator(t)
+				mockEventGenerator.EXPECT().
+					finished().
+					Return(true).
+					Once()
+
+				return mockEventGenerator
+			},
+			inputIsFinished: true,
+		},
+		{
+			name:   "input not finished",
+			fields: fields{inputs: []eventGenerator{}, finishedInputs: []eventGenerator{}},
+			input: func() eventGenerator {
+				mockEventGenerator := NewMockeventGenerator(t)
+				mockEventGenerator.EXPECT().
+					finished().
+					Return(false).
+					Once()
+
+				return mockEventGenerator
+			},
+			inputIsFinished: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			e := &eventCombinator{
+				inputs:         tt.fields.inputs,
+				finishedInputs: tt.fields.finishedInputs,
+			}
+
+			e.addInput(tt.input())
+
+			if !tt.inputIsFinished {
+				require.Len(t, e.inputs, len(tt.fields.inputs)+1)
+				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs))
+			} else {
+				require.Len(t, e.inputs, len(tt.fields.inputs))
+				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs)+1)
+			}
+
+			sorted := slices.IsSortedFunc(e.inputs, func(a, b eventGenerator) int {
+				return a.peek().Time.Compare(b.peek().Time)
+			})
+			require.True(t, sorted)
 		})
 	}
 }
@@ -152,8 +221,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator not finished",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Minute)
-					eventGenerator2 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Second)
+					eventGenerator1 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Minute)
+					eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -162,7 +231,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 			},
 			finishesInput: false,
 			want: &event{
-				action: noAction{},
+				Action: NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
 			},
 		},
@@ -170,8 +239,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator finished",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newSingleEventGenerator(noAction{}, time.Time{})
-					eventGenerator2 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Second)
+					eventGenerator1 := newSingleEventGenerator(NewMockAction(t), time.Time{})
+					eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -180,7 +249,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 			},
 			finishesInput: true,
 			want: &event{
-				action: noAction{},
+				Action: NewMockAction(t),
 				Time:   time.Time{},
 			},
 		},
@@ -190,31 +259,30 @@ func Test_eventCombinator_pop(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			j := &eventCombinator{
+			e := &eventCombinator{
 				inputs:         tt.fields.inputs(),
 				finishedInputs: tt.fields.finishedInputs(),
 			}
-			j.sortInputs()
+			e.sortInputs()
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = j.pop()
+					_ = e.pop()
 				})
 				return
 			}
 
-			if got := j.pop(); !reflect.DeepEqual(got, tt.want) {
+			if got := e.pop(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("pop() = %v, want %v", got, tt.want)
 			}
 
 			if !tt.finishesInput {
-				require.Len(t, j.inputs, len(tt.fields.inputs()))
-				require.Len(t, j.finishedInputs, len(tt.fields.finishedInputs()))
+				require.Len(t, e.inputs, len(tt.fields.inputs()))
+				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs()))
 			} else {
-				require.Len(t, j.inputs, len(tt.fields.inputs())-1)
-				require.Len(t, j.finishedInputs, len(tt.fields.finishedInputs())+1)
+				require.Len(t, e.inputs, len(tt.fields.inputs())-1)
+				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs())+1)
 			}
-
 		})
 	}
 }
@@ -249,8 +317,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 			name: "success",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Minute)
-					eventGenerator2 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Second)
+					eventGenerator1 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Minute)
+					eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -258,7 +326,7 @@ func Test_eventCombinator_peek(t *testing.T) {
 				},
 			},
 			want: event{
-				action: noAction{},
+				Action: NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
 			},
 		},
@@ -268,25 +336,25 @@ func Test_eventCombinator_peek(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			j := &eventCombinator{
+			e := &eventCombinator{
 				inputs:         tt.fields.inputs(),
 				finishedInputs: tt.fields.finishedInputs(),
 			}
-			j.sortInputs()
+			e.sortInputs()
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = j.peek()
+					_ = e.peek()
 				})
 				return
 			}
 
-			if got := j.peek(); !reflect.DeepEqual(got, tt.want) {
+			if got := e.peek(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("peek() = %v, want %v", got, tt.want)
 			}
 
-			require.Len(t, j.inputs, len(tt.fields.inputs()))
-			require.Len(t, j.finishedInputs, len(tt.fields.finishedInputs()))
+			require.Len(t, e.inputs, len(tt.fields.inputs()))
+			require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs()))
 
 		})
 	}
@@ -327,12 +395,12 @@ func Test_eventCombinator_finished(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			j := &eventCombinator{
+			e := &eventCombinator{
 				inputs:         tt.fields.inputs,
 				finishedInputs: tt.fields.finishedInputs,
 			}
 
-			if got := j.finished(); !reflect.DeepEqual(got, tt.want) {
+			if got := e.finished(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("finished() = %v, want %v", got, tt.want)
 			}
 		})
@@ -342,19 +410,19 @@ func Test_eventCombinator_finished(t *testing.T) {
 func Test_eventCombinator_sortInputs(t *testing.T) {
 	t.Parallel()
 
-	eventGenerator1 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Minute)
-	eventGenerator2 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Second)
-	eventGenerator3 := newPeriodicEventGenerator(noAction{}, time.Time{}, nil, time.Hour)
+	eventGenerator1 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Minute)
+	eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
+	eventGenerator3 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Hour)
 
 	inputs := []eventGenerator{eventGenerator1, eventGenerator2, eventGenerator3}
 
-	j := &eventCombinator{
+	e := &eventCombinator{
 		inputs:         inputs,
 		finishedInputs: make([]eventGenerator, 0),
 	}
-	j.sortInputs()
+	e.sortInputs()
 
-	sorted := slices.IsSortedFunc(j.inputs, func(a, b eventGenerator) int {
+	sorted := slices.IsSortedFunc(e.inputs, func(a, b eventGenerator) int {
 		return a.peek().Time.Compare(b.peek().Time)
 	})
 	require.True(t, sorted)

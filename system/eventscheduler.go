@@ -16,7 +16,7 @@ type EventScheduler struct {
 }
 
 func (s *EventScheduler) PerformAfter(duration time.Duration, action timing.Action) {
-	time.AfterFunc(duration, action)
+	time.AfterFunc(duration, action.Perform)
 }
 
 func (s *EventScheduler) PerformRepeatedly(duration time.Duration, action timing.Action) {
@@ -25,7 +25,7 @@ func (s *EventScheduler) PerformRepeatedly(duration time.Duration, action timing
 	go func() {
 		for {
 			<-ticker.C
-			action()
+			action.Perform()
 		}
 	}()
 }
