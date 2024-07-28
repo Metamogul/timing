@@ -7,7 +7,7 @@ type Clock interface {
 }
 
 type Action interface {
-	Perform()
+	Perform(Clock)
 }
 
 type EventScheduler interface {

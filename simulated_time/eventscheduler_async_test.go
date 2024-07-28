@@ -1,17 +1,20 @@
 package simulated_time
 
 import (
+	"github.com/metamogul/timing"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"sync"
 	"testing"
 	"time"
 )
 
-func TestNewEventScheduler(t *testing.T) {
+func TestNewAsyncEventScheduler(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
 
-	newEventScheduler := NewEventScheduler(now)
+	newEventScheduler := NewAsyncEventScheduler(now)
 
 	require.NotNil(t, newEventScheduler)
 
@@ -21,24 +24,35 @@ func TestNewEventScheduler(t *testing.T) {
 	require.NotNil(t, newEventScheduler.eventGenerators)
 }
 
-func TestEventScheduler_Forward(t *testing.T) {
+func TestAsyncEventScheduler_Forward(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	longRunningAction1 := NewMockAction(t)
+	mu := sync.Mutex{}
+	eventTimes := make([]time.Time, 0)
+
+	longRunningAction1 := timing.NewMockAction(t)
 	longRunningAction1.EXPECT().
-		Perform().
-		Run(func() {
-			time.Sleep(50 * time.Millisecond)
+		Perform(mock.Anything).
+		Run(func(clock timing.Clock) {
+			time.Sleep(100 * time.Millisecond)
+
+			mu.Lock()
+			eventTimes = append(eventTimes, clock.Now())
+			mu.Unlock()
 		}).
 		Once()
 
-	longRunningAction2 := NewMockAction(t)
+	longRunningAction2 := timing.NewMockAction(t)
 	longRunningAction2.EXPECT().
-		Perform().
-		Run(func() {
-			time.Sleep(60 * time.Millisecond)
+		Perform(mock.Anything).
+		Run(func(clock timing.Clock) {
+			time.Sleep(50 * time.Millisecond)
+
+			mu.Lock()
+			eventTimes = append(eventTimes, clock.Now())
+			mu.Unlock()
 		}).
 		Once()
 
@@ -47,51 +61,18 @@ func TestEventScheduler_Forward(t *testing.T) {
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Millisecond)),
 	}
 
-	e := &EventScheduler{
+	e := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(eventGenerators...),
 	}
 
 	e.Forward(3 * time.Millisecond)
+
+	require.Equal(t, now.Add(2*time.Millisecond), eventTimes[0])
+	require.Equal(t, now.Add(1*time.Millisecond), eventTimes[1])
 }
 
-func TestEventScheduler_Forward_RecursiveScheduling(t *testing.T) {
-	// TODO: move this test to strictly monotonous scheduler
-
-	/*
-		t.Parallel()
-
-		now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
-
-		e := &EventScheduler{
-			clock:           newClock(now),
-			eventGenerators: newEventCombinator(),
-		}
-
-		innerAction := NewMockAction(t)
-		innerAction.EXPECT().
-			Perform().
-			Run(func() {
-				fmt.Println("called inner action")
-			}).
-			Once()
-
-		outerAction := NewMockAction(t)
-		outerAction.EXPECT().
-			Perform().
-			Run(func() {
-				fmt.Println("called outer action")
-				e.PerformAfter(innerAction, time.Second)
-			}).
-			Once()
-
-		e.PerformAfter(outerAction, time.Second)
-
-		e.Forward(3 * time.Second)
-	*/
-}
-
-func TestEventScheduler_dispatchNextEvent(t *testing.T) {
+func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -109,15 +90,15 @@ func TestEventScheduler_dispatchNextEvent(t *testing.T) {
 		{
 			name: "next event after target time",
 			eventGenerators: func() []eventGenerator {
-				return []eventGenerator{newSingleEventGenerator(NewMockAction(t), now.Add(1*time.Hour))}
+				return []eventGenerator{newSingleEventGenerator(timing.NewMockAction(t), now.Add(1*time.Hour))}
 			},
 		},
 		{
 			name: "event dispatched successfully",
 			eventGenerators: func() []eventGenerator {
-				mockAction := NewMockAction(t)
+				mockAction := timing.NewMockAction(t)
 				mockAction.EXPECT().
-					Perform().
+					Perform(mock.Anything).
 					Once()
 				return []eventGenerator{newSingleEventGenerator(mockAction, now.Add(1*time.Second))}
 			},
@@ -129,13 +110,13 @@ func TestEventScheduler_dispatchNextEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &EventScheduler{
+			e := &AsyncEventScheduler{
 				clock:           newClock(now),
 				eventGenerators: newEventCombinator(tt.eventGenerators()...),
 			}
 
-			if gotShouldContinue := e.dispatchNextEvent(targetTime); gotShouldContinue != tt.wantShouldContinue {
-				t.Errorf("dispatchNextEvent() = %v, want %v", gotShouldContinue, tt.wantShouldContinue)
+			if gotShouldContinue := e.performNextEvent(targetTime); gotShouldContinue != tt.wantShouldContinue {
+				t.Errorf("performNextEvent() = %v, want %v", gotShouldContinue, tt.wantShouldContinue)
 			}
 			e.wg.Wait()
 
@@ -148,31 +129,31 @@ func TestEventScheduler_dispatchNextEvent(t *testing.T) {
 	}
 }
 
-func TestEventScheduler_PerformAfter(t *testing.T) {
+func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	e := &EventScheduler{
+	e := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformAfter(NewMockAction(t), time.Second)
+	e.PerformAfter(timing.NewMockAction(t), time.Second)
 
 	require.Len(t, e.eventGenerators.inputs, 1)
 	require.IsType(t, &singleEventGenerator{}, e.eventGenerators.inputs[0])
 }
 
-func TestEventScheduler_PerformRepeatedly(t *testing.T) {
+func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	e := &EventScheduler{
+	e := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformRepeatedly(NewMockAction(t), nil, time.Second)
+	e.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second)
 
 	require.Len(t, e.eventGenerators.inputs, 1)
 	require.IsType(t, &periodicEventGenerator{}, e.eventGenerators.inputs[0])

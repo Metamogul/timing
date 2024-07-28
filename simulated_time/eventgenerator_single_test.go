@@ -33,12 +33,12 @@ func Test_newSingleEventGenerator(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				action:     NewMockAction(t),
+				action:     timing.NewMockAction(t),
 				actionTime: time.Time{},
 			},
 			want: &singleEventGenerator{
 				event: &event{
-					Action: NewMockAction(t),
+					Action: timing.NewMockAction(t),
 					Time:   time.Time{},
 				},
 			},
@@ -86,9 +86,9 @@ func Test_singleEventStream_pop(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				event: newEvent(NewMockAction(t), time.Time{}),
+				event: newEvent(timing.NewMockAction(t), time.Time{}),
 			},
-			want: newEvent(NewMockAction(t), time.Time{}),
+			want: newEvent(timing.NewMockAction(t), time.Time{}),
 		},
 	}
 
@@ -143,9 +143,9 @@ func Test_singleEventStream_peek(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				event: newEvent(NewMockAction(t), time.Time{}),
+				event: newEvent(timing.NewMockAction(t), time.Time{}),
 			},
-			want: *newEvent(NewMockAction(t), time.Time{}),
+			want: *newEvent(timing.NewMockAction(t), time.Time{}),
 		},
 	}
 
@@ -195,7 +195,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 		{
 			name: "not finished",
 			fields: fields{
-				event: newEvent(NewMockAction(t), time.Time{}),
+				event: newEvent(timing.NewMockAction(t), time.Time{}),
 			},
 			want: false,
 		},

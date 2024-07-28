@@ -33,11 +33,11 @@ func Test_newEvent(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				action:     NewMockAction(t),
+				action:     timing.NewMockAction(t),
 				actionTime: time.Time{},
 			},
 			want: &event{
-				Action: NewMockAction(t),
+				Action: timing.NewMockAction(t),
 				Time:   time.Time{},
 			},
 		},
@@ -62,11 +62,13 @@ func Test_newEvent(t *testing.T) {
 func Test_event_perform(t *testing.T) {
 	t.Parallel()
 
+	clockArg := newClock(time.Now())
+
 	e := &event{
 		Action: func() timing.Action {
-			mockedAction := NewMockAction(t)
+			mockedAction := timing.NewMockAction(t)
 			mockedAction.EXPECT().
-				Perform().
+				Perform(clockArg).
 				Once()
 
 			return mockedAction
@@ -74,5 +76,5 @@ func Test_event_perform(t *testing.T) {
 		Time: time.Time{},
 	}
 
-	e.Perform()
+	e.Perform(clockArg)
 }

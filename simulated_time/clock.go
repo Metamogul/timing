@@ -18,14 +18,14 @@ func (c *clock) Now() time.Time {
 	return c.now
 }
 
-func (c *clock) Forward(d time.Duration) {
-	c.now = c.now.Add(d)
-}
-
-func (c *clock) Set(t time.Time) {
+func (c *clock) set(t time.Time) {
 	if t.Before(c.now) {
 		panic("time can't be in the past")
 	}
 
 	c.now = t
+}
+
+func (c *clock) copy() *clock {
+	return &clock{c.now}
 }

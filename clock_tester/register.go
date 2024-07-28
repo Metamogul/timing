@@ -10,12 +10,12 @@ type register struct {
 	counter int
 }
 
-type Action func()
+type Action func(timing.Clock)
 
-func (a Action) Perform() { a() }
+func (a Action) Perform(clock timing.Clock) { a(clock) }
 
 func (r *register) incrementAfterOneMinute(scheduler timing.EventScheduler) {
-	scheduler.PerformAfter(Action(func() {
+	scheduler.PerformAfter(Action(func(timing.Clock) {
 		// Simulate execution time
 		time.Sleep(100 * time.Millisecond)
 
@@ -26,7 +26,7 @@ func (r *register) incrementAfterOneMinute(scheduler timing.EventScheduler) {
 func (r *register) incrementEveryMinute(scheduler timing.EventScheduler) {
 	mu := sync.Mutex{}
 
-	scheduler.PerformRepeatedly(Action(func() {
+	scheduler.PerformRepeatedly(Action(func(timing.Clock) {
 		mu.Lock()
 
 		// Simulate execution time

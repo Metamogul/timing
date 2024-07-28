@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
 	"slices"
@@ -71,7 +72,7 @@ func Test_newEventCombinator(t *testing.T) {
 				mockEventGenerator1.EXPECT().
 					peek().
 					Return(event{
-						Action: NewMockAction(t),
+						Action: timing.NewMockAction(t),
 						Time:   time.Time{},
 					}).
 					Maybe()
@@ -84,7 +85,7 @@ func Test_newEventCombinator(t *testing.T) {
 				mockEventGenerator2.EXPECT().
 					peek().
 					Return(event{
-						Action: NewMockAction(t),
+						Action: timing.NewMockAction(t),
 						Time:   time.Time{}.Add(time.Second),
 					}).
 					Maybe()
@@ -221,8 +222,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator not finished",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Minute)
-					eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
+					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute)
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -231,7 +232,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 			},
 			finishesInput: false,
 			want: &event{
-				Action: NewMockAction(t),
+				Action: timing.NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
 			},
 		},
@@ -239,8 +240,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator finished",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newSingleEventGenerator(NewMockAction(t), time.Time{})
-					eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
+					eventGenerator1 := newSingleEventGenerator(timing.NewMockAction(t), time.Time{})
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -249,7 +250,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 			},
 			finishesInput: true,
 			want: &event{
-				Action: NewMockAction(t),
+				Action: timing.NewMockAction(t),
 				Time:   time.Time{},
 			},
 		},
@@ -317,8 +318,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 			name: "success",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Minute)
-					eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
+					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute)
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -326,7 +327,7 @@ func Test_eventCombinator_peek(t *testing.T) {
 				},
 			},
 			want: event{
-				Action: NewMockAction(t),
+				Action: timing.NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
 			},
 		},
@@ -410,9 +411,9 @@ func Test_eventCombinator_finished(t *testing.T) {
 func Test_eventCombinator_sortInputs(t *testing.T) {
 	t.Parallel()
 
-	eventGenerator1 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Minute)
-	eventGenerator2 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Second)
-	eventGenerator3 := newPeriodicEventGenerator(NewMockAction(t), time.Time{}, nil, time.Hour)
+	eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute)
+	eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
+	eventGenerator3 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Hour)
 
 	inputs := []eventGenerator{eventGenerator1, eventGenerator2, eventGenerator3}
 

@@ -1,10 +1,11 @@
 #file: noinspection SpellCheckingInspection
 packages:
-  github.com/metamogul/timing/simulated_time:
+  github.com/metamogul/timing:
     config:
       with-expecter: true
       dir: "{{.InterfaceDir}}"
       inpackage: true
+      recursive: true
     interfaces:
       Action:
       eventGenerator:

@@ -26,17 +26,6 @@ func TestClock_Now(t *testing.T) {
 	require.Equal(t, now, clock.Now())
 }
 
-func TestClock_Forward(t *testing.T) {
-	t.Parallel()
-
-	now := time.Now()
-
-	clock := clock{now}
-	clock.Forward(time.Minute)
-
-	require.Equal(t, now.Add(time.Minute), clock.now)
-}
-
 func Test_clock_Set(t *testing.T) {
 	t.Parallel()
 
@@ -76,12 +65,12 @@ func Test_clock_Set(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					c.Set(tt.newTime)
+					c.set(tt.newTime)
 				})
 				return
 			}
 
-			c.Set(tt.newTime)
+			c.set(tt.newTime)
 			require.Equal(t, tt.newTime, c.now)
 		})
 	}

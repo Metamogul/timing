@@ -12,7 +12,7 @@ func Test_incrementAfterOneMinute(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	scheduler := simulated_time.NewEventScheduler(now)
+	scheduler := simulated_time.NewAsyncEventScheduler(now)
 
 	r := &register{}
 
@@ -27,7 +27,7 @@ func Test_incrementEveryMinute(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	scheduler := simulated_time.NewEventScheduler(now)
+	scheduler := simulated_time.NewAsyncEventScheduler(now)
 
 	r := &register{}
 
