@@ -15,19 +15,30 @@ type EventScheduler struct {
 	Clock
 }
 
-func (s *EventScheduler) PerformAfter(duration time.Duration, action timing.Action) {
+func (e *EventScheduler) PerformAfter(action timing.Action, duration time.Duration) {
 	time.AfterFunc(duration, func() {
-		action.Perform(Clock{})
+		action.Perform(e.Clock)
 	})
 }
 
-func (s *EventScheduler) PerformRepeatedly(duration time.Duration, action timing.Action) {
-	ticker := time.NewTicker(duration)
+func (e *EventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+
+	var timer *time.Timer
+	if until != nil {
+		timer = time.NewTimer(until.Sub(e.Now()))
+	} else {
+		timer = &time.Timer{}
+	}
 
 	go func() {
 		for {
-			<-ticker.C
-			action.Perform(Clock{})
+			select {
+			case <-ticker.C:
+				action.Perform(Clock{})
+			case <-timer.C:
+				return
+			}
 		}
 	}()
 }
