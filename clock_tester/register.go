@@ -1,6 +1,7 @@
 package clock_tester
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ func (r *register) incrementAfterOneMinute(scheduler timing.EventScheduler) {
 		time.Sleep(100 * time.Millisecond)
 
 		r.counter++
-	}), time.Minute)
+	}), time.Minute, context.Background())
 }
 
 func (r *register) incrementEveryMinute(scheduler timing.EventScheduler) {
@@ -35,5 +36,5 @@ func (r *register) incrementEveryMinute(scheduler timing.EventScheduler) {
 		r.counter++
 
 		mu.Unlock()
-	}), nil, time.Minute)
+	}), nil, time.Minute, context.Background())
 }

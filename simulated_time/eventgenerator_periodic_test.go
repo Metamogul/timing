@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -16,6 +17,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 		from     time.Time
 		to       *time.Time
 		interval time.Duration
+		ctx      context.Context
 	}
 
 	tests := []struct {
@@ -31,6 +33,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: time.Second,
+				ctx:      context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -41,6 +44,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				from:     time.Time{}.Add(time.Second),
 				to:       ptr(time.Time{}),
 				interval: time.Second,
+				ctx:      context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -51,6 +55,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				from:     time.Time{}.Add(time.Second),
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: time.Second,
+				ctx:      context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -61,6 +66,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: 0,
+				ctx:      context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -71,6 +77,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(time.Second)),
 				interval: time.Second * 2,
+				ctx:      context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -81,6 +88,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				from:     time.Time{},
 				to:       ptr(time.Time{}.Add(2 * time.Second)),
 				interval: time.Second,
+				ctx:      context.Background(),
 			},
 			want: &periodicEventGenerator{
 				action:   timing.NewMockAction(t),
@@ -92,6 +100,8 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 					Action: timing.NewMockAction(t),
 					Time:   time.Time{}.Add(time.Second),
 				},
+
+				ctx: context.Background(),
 			},
 		},
 	}
@@ -102,12 +112,12 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = newPeriodicEventGenerator(tt.args.action, tt.args.from, tt.args.to, tt.args.interval)
+					_ = newPeriodicEventGenerator(tt.args.action, tt.args.from, tt.args.to, tt.args.interval, tt.args.ctx)
 				})
 				return
 			}
 
-			if got := newPeriodicEventGenerator(tt.args.action, tt.args.from, tt.args.to, tt.args.interval); !reflect.DeepEqual(got, tt.want) {
+			if got := newPeriodicEventGenerator(tt.args.action, tt.args.from, tt.args.to, tt.args.interval, tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newPeriodicEventGenerator() = %v, want %v", got, tt.want)
 			}
 		})
@@ -123,6 +133,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 		to           *time.Time
 		interval     time.Duration
 		currentEvent *event
+		ctx          context.Context
 	}
 
 	tests := []struct {
@@ -140,6 +151,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
+				ctx:          context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -151,6 +163,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				to:           nil,
 				interval:     time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
+				ctx:          context.Background(),
 			},
 			want: newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
 		},
@@ -162,6 +175,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(40*time.Second)),
+				ctx:          context.Background(),
 			},
 			want: newEvent(timing.NewMockAction(t), time.Time{}.Add(40*time.Second)),
 		},
@@ -173,6 +187,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(50*time.Second)),
+				ctx:          context.Background(),
 			},
 			want:            newEvent(timing.NewMockAction(t), time.Time{}.Add(50*time.Second)),
 			requireFinished: true,
@@ -188,6 +203,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				to:           tt.fields.to,
 				interval:     tt.fields.interval,
 				currentEvent: tt.fields.currentEvent,
+				ctx:          tt.fields.ctx,
 			}
 
 			if tt.requirePanic {
@@ -219,6 +235,7 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 		to           *time.Time
 		interval     time.Duration
 		currentEvent *event
+		ctx          context.Context
 	}
 
 	tests := []struct {
@@ -235,6 +252,7 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
+				ctx:          context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -246,6 +264,7 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 				to:           nil,
 				interval:     time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
+				ctx:          context.Background(),
 			},
 			want: *newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
 		},
@@ -261,6 +280,7 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 				to:           tt.fields.to,
 				interval:     tt.fields.interval,
 				currentEvent: tt.fields.currentEvent,
+				ctx:          tt.fields.ctx,
 			}
 
 			if tt.requirePanic {
@@ -288,7 +308,11 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 		to           *time.Time
 		interval     time.Duration
 		currentEvent *event
+		ctx          context.Context
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
 	tests := []struct {
 		name   string
@@ -296,37 +320,52 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 		want   bool
 	}{
 		{
-			name: "never finished",
-			fields: fields{
-				action:       timing.NewMockAction(t),
-				from:         time.Time{},
-				to:           nil,
-				interval:     0,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}),
-			},
-			want: false,
-		},
-		{
-			name: "not finished yet",
+			name: "context is done",
 			fields: fields{
 				action:       timing.NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(45*time.Second)),
+				ctx:          ctx,
+			},
+			want: true,
+		},
+		{
+			name: "to is nil",
+			fields: fields{
+				action:       timing.NewMockAction(t),
+				from:         time.Time{},
+				to:           nil,
+				interval:     0,
+				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}),
+				ctx:          context.Background(),
 			},
 			want: false,
 		},
 		{
-			name: "finished",
+			name: "to is set, finished",
 			fields: fields{
 				action:       timing.NewMockAction(t),
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
 				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
+				ctx:          context.Background(),
 			},
 			want: true,
+		},
+		{
+			name: "to is set, not finished yet",
+			fields: fields{
+				action:       timing.NewMockAction(t),
+				from:         time.Time{},
+				to:           ptr(time.Time{}.Add(time.Minute)),
+				interval:     10 * time.Second,
+				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(45*time.Second)),
+				ctx:          context.Background(),
+			},
+			want: false,
 		},
 	}
 
@@ -340,6 +379,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 				to:           tt.fields.to,
 				interval:     tt.fields.interval,
 				currentEvent: tt.fields.currentEvent,
+				ctx:          tt.fields.ctx,
 			}
 
 			require.Equal(t, tt.want, p.finished())

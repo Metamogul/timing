@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -14,6 +15,7 @@ func Test_newSingleEventGenerator(t *testing.T) {
 	type args struct {
 		action     timing.Action
 		actionTime time.Time
+		ctx        context.Context
 	}
 
 	tests := []struct {
@@ -27,6 +29,7 @@ func Test_newSingleEventGenerator(t *testing.T) {
 			args: args{
 				action:     nil,
 				actionTime: time.Time{},
+				ctx:        context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -35,12 +38,14 @@ func Test_newSingleEventGenerator(t *testing.T) {
 			args: args{
 				action:     timing.NewMockAction(t),
 				actionTime: time.Time{},
+				ctx:        context.Background(),
 			},
 			want: &singleEventGenerator{
 				event: &event{
 					Action: timing.NewMockAction(t),
 					Time:   time.Time{},
 				},
+				ctx: context.Background(),
 			},
 		},
 	}
@@ -51,12 +56,12 @@ func Test_newSingleEventGenerator(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = newSingleEventGenerator(tt.args.action, tt.args.actionTime)
+					_ = newSingleEventGenerator(tt.args.action, tt.args.actionTime, tt.args.ctx)
 				})
 				return
 			}
 
-			if got := newSingleEventGenerator(tt.args.action, tt.args.actionTime); !reflect.DeepEqual(got, tt.want) {
+			if got := newSingleEventGenerator(tt.args.action, tt.args.actionTime, tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newSingleEventGenerator() = %v, want %v", got, tt.want)
 			}
 		})
@@ -68,6 +73,7 @@ func Test_singleEventStream_pop(t *testing.T) {
 
 	type fields struct {
 		event *event
+		ctx   context.Context
 	}
 
 	tests := []struct {
@@ -80,6 +86,7 @@ func Test_singleEventStream_pop(t *testing.T) {
 			name: "already finished",
 			fields: fields{
 				event: nil,
+				ctx:   context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -87,6 +94,7 @@ func Test_singleEventStream_pop(t *testing.T) {
 			name: "success",
 			fields: fields{
 				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				ctx:   context.Background(),
 			},
 			want: newEvent(timing.NewMockAction(t), time.Time{}),
 		},
@@ -98,6 +106,7 @@ func Test_singleEventStream_pop(t *testing.T) {
 
 			s := &singleEventGenerator{
 				event: tt.fields.event,
+				ctx:   tt.fields.ctx,
 			}
 
 			if tt.requirePanic {
@@ -125,6 +134,7 @@ func Test_singleEventStream_peek(t *testing.T) {
 
 	type fields struct {
 		event *event
+		ctx   context.Context
 	}
 
 	tests := []struct {
@@ -137,6 +147,7 @@ func Test_singleEventStream_peek(t *testing.T) {
 			name: "already finished",
 			fields: fields{
 				event: nil,
+				ctx:   context.Background(),
 			},
 			requirePanic: true,
 		},
@@ -144,6 +155,7 @@ func Test_singleEventStream_peek(t *testing.T) {
 			name: "success",
 			fields: fields{
 				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				ctx:   context.Background(),
 			},
 			want: *newEvent(timing.NewMockAction(t), time.Time{}),
 		},
@@ -155,6 +167,7 @@ func Test_singleEventStream_peek(t *testing.T) {
 
 			s := &singleEventGenerator{
 				event: tt.fields.event,
+				ctx:   tt.fields.ctx,
 			}
 
 			if tt.requirePanic {
@@ -178,7 +191,11 @@ func Test_singleEventStream_finished(t *testing.T) {
 
 	type fields struct {
 		event *event
+		ctx   context.Context
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
 	tests := []struct {
 		name   string
@@ -186,9 +203,18 @@ func Test_singleEventStream_finished(t *testing.T) {
 		want   bool
 	}{
 		{
-			name: "finished",
+			name: "no event",
 			fields: fields{
 				event: nil,
+				ctx:   context.Background(),
+			},
+			want: true,
+		},
+		{
+			name: "context is done",
+			fields: fields{
+				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				ctx:   ctx,
 			},
 			want: true,
 		},
@@ -196,6 +222,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 			name: "not finished",
 			fields: fields{
 				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				ctx:   context.Background(),
 			},
 			want: false,
 		},
@@ -207,6 +234,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 
 			s := &singleEventGenerator{
 				event: tt.fields.event,
+				ctx:   tt.fields.ctx,
 			}
 
 			if got := s.finished(); got != tt.want {

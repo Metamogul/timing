@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -57,8 +58,8 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 		Once()
 
 	eventGenerators := []eventGenerator{
-		newSingleEventGenerator(longRunningAction1, now.Add(1*time.Millisecond)),
-		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Millisecond)),
+		newSingleEventGenerator(longRunningAction1, now.Add(1*time.Millisecond), context.Background()),
+		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Millisecond), context.Background()),
 	}
 
 	e := &AsyncEventScheduler{
@@ -90,7 +91,7 @@ func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
 		{
 			name: "next event after target time",
 			eventGenerators: func() []eventGenerator {
-				return []eventGenerator{newSingleEventGenerator(timing.NewMockAction(t), now.Add(1*time.Hour))}
+				return []eventGenerator{newSingleEventGenerator(timing.NewMockAction(t), now.Add(1*time.Hour), context.Background())}
 			},
 		},
 		{
@@ -100,7 +101,7 @@ func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
 				mockAction.EXPECT().
 					Perform(mock.Anything).
 					Once()
-				return []eventGenerator{newSingleEventGenerator(mockAction, now.Add(1*time.Second))}
+				return []eventGenerator{newSingleEventGenerator(mockAction, now.Add(1*time.Second), context.Background())}
 			},
 			wantShouldContinue: true,
 		},
@@ -138,7 +139,7 @@ func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformAfter(timing.NewMockAction(t), time.Second)
+	e.PerformAfter(timing.NewMockAction(t), time.Second, context.Background())
 
 	require.Len(t, e.eventGenerators.inputs, 1)
 	require.IsType(t, &singleEventGenerator{}, e.eventGenerators.inputs[0])
@@ -153,7 +154,7 @@ func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second)
+	e.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second, context.Background())
 
 	require.Len(t, e.eventGenerators.inputs, 1)
 	require.IsType(t, &periodicEventGenerator{}, e.eventGenerators.inputs[0])

@@ -1,6 +1,7 @@
 package system
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"sync"
 	"testing"
@@ -22,8 +23,21 @@ func TestEventScheduler_PerformAfter(t *testing.T) {
 		Once()
 
 	wg.Add(1)
-	s.PerformAfter(mockAction, time.Millisecond)
+	s.PerformAfter(mockAction, time.Millisecond, context.Background())
 	wg.Wait()
+}
+
+func TestEventScheduler_PerformAfter_cancelled(t *testing.T) {
+	t.Parallel()
+
+	clock := Clock{}
+	s := &EventScheduler{Clock: clock}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	s.PerformAfter(timing.NewMockAction(t), time.Millisecond, ctx)
+	time.Sleep(2 * time.Millisecond)
 }
 
 func TestEventScheduler_PerformRepeatedly_until(t *testing.T) {
@@ -41,7 +55,7 @@ func TestEventScheduler_PerformRepeatedly_until(t *testing.T) {
 		Twice()
 
 	wg.Add(2)
-	s.PerformRepeatedly(mockAction, ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond)
+	s.PerformRepeatedly(mockAction, ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond, context.Background())
 	wg.Wait()
 }
 
@@ -56,6 +70,19 @@ func TestEventScheduler_PerformRepeatedly_indefinitely(t *testing.T) {
 		Perform(clock).
 		Twice()
 
-	s.PerformRepeatedly(mockAction, nil, time.Millisecond)
+	s.PerformRepeatedly(mockAction, nil, time.Millisecond, context.Background())
 	time.Sleep(3 * time.Millisecond)
+}
+
+func TestEventScheduler_PerformRepeatedly_cancelled(t *testing.T) {
+	t.Parallel()
+
+	clock := Clock{}
+	s := &EventScheduler{Clock: Clock{}}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	s.PerformRepeatedly(timing.NewMockAction(t), ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond, ctx)
+	time.Sleep(2 * time.Millisecond)
 }

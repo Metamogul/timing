@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"sync"
 	"time"
@@ -46,10 +47,10 @@ func (a *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldCon
 	return true
 }
 
-func (a *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration) {
-	a.eventGenerators.addInput(newSingleEventGenerator(action, a.now.Add(interval)))
+func (a *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
+	a.eventGenerators.addInput(newSingleEventGenerator(action, a.now.Add(interval), ctx))
 }
 
-func (a *SerialEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration) {
-	a.eventGenerators.addInput(newPeriodicEventGenerator(action, a.Now(), until, interval))
+func (a *SerialEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
+	a.eventGenerators.addInput(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
 }

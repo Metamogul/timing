@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -222,8 +223,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator not finished",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute)
-					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
+					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -240,8 +241,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator finished",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newSingleEventGenerator(timing.NewMockAction(t), time.Time{})
-					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
+					eventGenerator1 := newSingleEventGenerator(timing.NewMockAction(t), time.Time{}, context.Background())
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -318,8 +319,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 			name: "success",
 			fields: fields{
 				inputs: func() []eventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute)
-					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
+					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedInputs: func() []eventGenerator {
@@ -411,9 +412,9 @@ func Test_eventCombinator_finished(t *testing.T) {
 func Test_eventCombinator_sortInputs(t *testing.T) {
 	t.Parallel()
 
-	eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute)
-	eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second)
-	eventGenerator3 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Hour)
+	eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
+	eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
+	eventGenerator3 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Hour, context.Background())
 
 	inputs := []eventGenerator{eventGenerator1, eventGenerator2, eventGenerator3}
 
