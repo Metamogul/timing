@@ -16,25 +16,34 @@ type Action func(timing.Clock)
 func (a Action) Perform(clock timing.Clock) { a(clock) }
 
 func (r *register) incrementAfterOneMinute(scheduler timing.EventScheduler) {
-	scheduler.PerformAfter(Action(func(timing.Clock) {
-		// Simulate execution time
-		time.Sleep(100 * time.Millisecond)
+	scheduler.PerformAfter(
+		Action(func(timing.Clock) {
+			// Simulate execution time
+			time.Sleep(100 * time.Millisecond)
 
-		r.counter++
-	}), time.Minute, context.Background())
+			r.counter++
+		}),
+		time.Minute,
+		context.Background(),
+	)
 }
 
 func (r *register) incrementEveryMinute(scheduler timing.EventScheduler) {
 	mu := sync.Mutex{}
 
-	scheduler.PerformRepeatedly(Action(func(timing.Clock) {
-		mu.Lock()
+	scheduler.PerformRepeatedly(
+		Action(func(timing.Clock) {
+			mu.Lock()
 
-		// Simulate execution time
-		time.Sleep(10 * time.Millisecond)
+			// Simulate execution time
+			time.Sleep(10 * time.Millisecond)
 
-		r.counter++
+			r.counter++
 
-		mu.Unlock()
-	}), nil, time.Minute, context.Background())
+			mu.Unlock()
+		}),
+		nil,
+		time.Minute,
+		context.Background(),
+	)
 }
