@@ -63,12 +63,12 @@ func (e *AsyncEventScheduler) PerformAfter(action timing.Action, interval time.D
 	e.eventGeneratorsMu.Lock()
 	defer e.eventGeneratorsMu.Unlock()
 
-	e.eventGenerators.addInput(newSingleEventGenerator(action, e.now.Add(interval), ctx))
+	e.eventGenerators.add(newSingleEventGenerator(action, e.now.Add(interval), ctx))
 }
 
 func (a *AsyncEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
 	a.eventGeneratorsMu.Lock()
 	defer a.eventGeneratorsMu.Unlock()
 
-	a.eventGenerators.addInput(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
+	a.eventGenerators.add(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
 }

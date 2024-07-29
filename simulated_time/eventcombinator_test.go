@@ -14,20 +14,20 @@ func Test_newEventCombinator(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name              string
-		inputs            func() []eventGenerator
-		lenInputs         int
-		lenFinishedInputs int
+		name                  string
+		activeGenerators      func() []eventGenerator
+		lenActiveGenerators   int
+		lenFinishedGenerators int
 	}{
 		{
-			name:              "no inputs passed",
-			inputs:            func() []eventGenerator { return nil },
-			lenInputs:         0,
-			lenFinishedInputs: 0,
+			name:                  "no generators passed",
+			activeGenerators:      func() []eventGenerator { return nil },
+			lenActiveGenerators:   0,
+			lenFinishedGenerators: 0,
 		},
 		{
-			name: "all inputs finished",
-			inputs: func() []eventGenerator {
+			name: "all generators finished",
+			activeGenerators: func() []eventGenerator {
 				mockEventGenerator := NewMockeventGenerator(t)
 				mockEventGenerator.EXPECT().
 					finished().
@@ -36,12 +36,12 @@ func Test_newEventCombinator(t *testing.T) {
 
 				return []eventGenerator{mockEventGenerator}
 			},
-			lenInputs:         0,
-			lenFinishedInputs: 1,
+			lenActiveGenerators:   0,
+			lenFinishedGenerators: 1,
 		},
 		{
-			name: "two mixed inputs",
-			inputs: func() []eventGenerator {
+			name: "two mixed generators",
+			activeGenerators: func() []eventGenerator {
 				mockEventGenerator1 := NewMockeventGenerator(t)
 				mockEventGenerator1.EXPECT().
 					finished().
@@ -59,12 +59,12 @@ func Test_newEventCombinator(t *testing.T) {
 					mockEventGenerator2,
 				}
 			},
-			lenInputs:         1,
-			lenFinishedInputs: 1,
+			lenActiveGenerators:   1,
+			lenFinishedGenerators: 1,
 		},
 		{
-			name: "two unfinished inputs",
-			inputs: func() []eventGenerator {
+			name: "two unfinished generators",
+			activeGenerators: func() []eventGenerator {
 				mockEventGenerator1 := NewMockeventGenerator(t)
 				mockEventGenerator1.EXPECT().
 					finished().
@@ -96,8 +96,8 @@ func Test_newEventCombinator(t *testing.T) {
 					mockEventGenerator2,
 				}
 			},
-			lenInputs:         2,
-			lenFinishedInputs: 0,
+			lenActiveGenerators:   2,
+			lenFinishedGenerators: 0,
 		},
 	}
 
@@ -105,15 +105,15 @@ func Test_newEventCombinator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := newEventCombinator(tt.inputs()...)
+			got := newEventCombinator(tt.activeGenerators()...)
 
-			require.NotNil(t, got.inputs)
-			require.NotNil(t, got.finishedInputs)
+			require.NotNil(t, got.activeGenerators)
+			require.NotNil(t, got.finishedGenerators)
 
-			require.Len(t, got.inputs, tt.lenInputs)
-			require.Len(t, got.finishedInputs, tt.lenFinishedInputs)
+			require.Len(t, got.activeGenerators, tt.lenActiveGenerators)
+			require.Len(t, got.finishedGenerators, tt.lenFinishedGenerators)
 
-			sorted := slices.IsSortedFunc(got.inputs, func(a, b eventGenerator) int {
+			sorted := slices.IsSortedFunc(got.activeGenerators, func(a, b eventGenerator) int {
 				return a.peek().Time.Compare(b.peek().Time)
 			})
 			require.True(t, sorted)
@@ -121,24 +121,24 @@ func Test_newEventCombinator(t *testing.T) {
 	}
 }
 
-func Test_eventCombinator_addInput(t *testing.T) {
+func Test_eventCombinator_add(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		inputs         []eventGenerator
-		finishedInputs []eventGenerator
+		activeGenerators   []eventGenerator
+		finishedGenerators []eventGenerator
 	}
 
 	tests := []struct {
-		name            string
-		fields          fields
-		input           func() eventGenerator
-		inputIsFinished bool
+		name                string
+		fields              fields
+		generator           func() eventGenerator
+		generatorIsFinished bool
 	}{
 		{
-			name:   "input finished",
-			fields: fields{inputs: []eventGenerator{}, finishedInputs: []eventGenerator{}},
-			input: func() eventGenerator {
+			name:   "generator finished",
+			fields: fields{activeGenerators: []eventGenerator{}, finishedGenerators: []eventGenerator{}},
+			generator: func() eventGenerator {
 				mockEventGenerator := NewMockeventGenerator(t)
 				mockEventGenerator.EXPECT().
 					finished().
@@ -147,12 +147,12 @@ func Test_eventCombinator_addInput(t *testing.T) {
 
 				return mockEventGenerator
 			},
-			inputIsFinished: true,
+			generatorIsFinished: true,
 		},
 		{
-			name:   "input not finished",
-			fields: fields{inputs: []eventGenerator{}, finishedInputs: []eventGenerator{}},
-			input: func() eventGenerator {
+			name:   "generator not finished",
+			fields: fields{activeGenerators: []eventGenerator{}, finishedGenerators: []eventGenerator{}},
+			generator: func() eventGenerator {
 				mockEventGenerator := NewMockeventGenerator(t)
 				mockEventGenerator.EXPECT().
 					finished().
@@ -161,7 +161,7 @@ func Test_eventCombinator_addInput(t *testing.T) {
 
 				return mockEventGenerator
 			},
-			inputIsFinished: false,
+			generatorIsFinished: false,
 		},
 	}
 
@@ -170,21 +170,21 @@ func Test_eventCombinator_addInput(t *testing.T) {
 			t.Parallel()
 
 			e := &eventCombinator{
-				inputs:         tt.fields.inputs,
-				finishedInputs: tt.fields.finishedInputs,
+				activeGenerators:   tt.fields.activeGenerators,
+				finishedGenerators: tt.fields.finishedGenerators,
 			}
 
-			e.addInput(tt.input())
+			e.add(tt.generator())
 
-			if !tt.inputIsFinished {
-				require.Len(t, e.inputs, len(tt.fields.inputs)+1)
-				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs))
+			if !tt.generatorIsFinished {
+				require.Len(t, e.activeGenerators, len(tt.fields.activeGenerators)+1)
+				require.Len(t, e.finishedGenerators, len(tt.fields.finishedGenerators))
 			} else {
-				require.Len(t, e.inputs, len(tt.fields.inputs))
-				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs)+1)
+				require.Len(t, e.activeGenerators, len(tt.fields.activeGenerators))
+				require.Len(t, e.finishedGenerators, len(tt.fields.finishedGenerators)+1)
 			}
 
-			sorted := slices.IsSortedFunc(e.inputs, func(a, b eventGenerator) int {
+			sorted := slices.IsSortedFunc(e.activeGenerators, func(a, b eventGenerator) int {
 				return a.peek().Time.Compare(b.peek().Time)
 			})
 			require.True(t, sorted)
@@ -196,24 +196,24 @@ func Test_eventCombinator_pop(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		inputs         func() []eventGenerator
-		finishedInputs func() []eventGenerator
+		activeGenerators   func() []eventGenerator
+		finishedGenerators func() []eventGenerator
 	}
 
 	tests := []struct {
-		name          string
-		fields        fields
-		finishesInput bool
-		want          *event
-		requirePanic  bool
+		name              string
+		fields            fields
+		finishesGenerator bool
+		want              *event
+		requirePanic      bool
 	}{
 		{
-			name: "all inputs finished",
+			name: "all generators finished",
 			fields: fields{
-				inputs: func() []eventGenerator {
+				activeGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
-				finishedInputs: func() []eventGenerator {
+				finishedGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
 			},
@@ -222,16 +222,16 @@ func Test_eventCombinator_pop(t *testing.T) {
 		{
 			name: "success, generator not finished",
 			fields: fields{
-				inputs: func() []eventGenerator {
+				activeGenerators: func() []eventGenerator {
 					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
 					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
-				finishedInputs: func() []eventGenerator {
+				finishedGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
 			},
-			finishesInput: false,
+			finishesGenerator: false,
 			want: &event{
 				Action: timing.NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
@@ -240,16 +240,16 @@ func Test_eventCombinator_pop(t *testing.T) {
 		{
 			name: "success, generator finished",
 			fields: fields{
-				inputs: func() []eventGenerator {
+				activeGenerators: func() []eventGenerator {
 					eventGenerator1 := newSingleEventGenerator(timing.NewMockAction(t), time.Time{}, context.Background())
 					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
-				finishedInputs: func() []eventGenerator {
+				finishedGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
 			},
-			finishesInput: true,
+			finishesGenerator: true,
 			want: &event{
 				Action: timing.NewMockAction(t),
 				Time:   time.Time{},
@@ -262,10 +262,10 @@ func Test_eventCombinator_pop(t *testing.T) {
 			t.Parallel()
 
 			e := &eventCombinator{
-				inputs:         tt.fields.inputs(),
-				finishedInputs: tt.fields.finishedInputs(),
+				activeGenerators:   tt.fields.activeGenerators(),
+				finishedGenerators: tt.fields.finishedGenerators(),
 			}
-			e.sortInputs()
+			e.sortActiveGenerators()
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
@@ -278,12 +278,12 @@ func Test_eventCombinator_pop(t *testing.T) {
 				t.Errorf("pop() = %v, want %v", got, tt.want)
 			}
 
-			if !tt.finishesInput {
-				require.Len(t, e.inputs, len(tt.fields.inputs()))
-				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs()))
+			if !tt.finishesGenerator {
+				require.Len(t, e.activeGenerators, len(tt.fields.activeGenerators()))
+				require.Len(t, e.finishedGenerators, len(tt.fields.finishedGenerators()))
 			} else {
-				require.Len(t, e.inputs, len(tt.fields.inputs())-1)
-				require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs())+1)
+				require.Len(t, e.activeGenerators, len(tt.fields.activeGenerators())-1)
+				require.Len(t, e.finishedGenerators, len(tt.fields.finishedGenerators())+1)
 			}
 		})
 	}
@@ -293,8 +293,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		inputs         func() []eventGenerator
-		finishedInputs func() []eventGenerator
+		activeGenerators   func() []eventGenerator
+		finishedGenerators func() []eventGenerator
 	}
 
 	tests := []struct {
@@ -304,12 +304,12 @@ func Test_eventCombinator_peek(t *testing.T) {
 		requirePanic bool
 	}{
 		{
-			name: "all inputs finished",
+			name: "all generators finished",
 			fields: fields{
-				inputs: func() []eventGenerator {
+				activeGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
-				finishedInputs: func() []eventGenerator {
+				finishedGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
 			},
@@ -318,12 +318,12 @@ func Test_eventCombinator_peek(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				inputs: func() []eventGenerator {
+				activeGenerators: func() []eventGenerator {
 					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
 					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 					return []eventGenerator{eventGenerator1, eventGenerator2}
 				},
-				finishedInputs: func() []eventGenerator {
+				finishedGenerators: func() []eventGenerator {
 					return make([]eventGenerator, 0)
 				},
 			},
@@ -339,10 +339,10 @@ func Test_eventCombinator_peek(t *testing.T) {
 			t.Parallel()
 
 			e := &eventCombinator{
-				inputs:         tt.fields.inputs(),
-				finishedInputs: tt.fields.finishedInputs(),
+				activeGenerators:   tt.fields.activeGenerators(),
+				finishedGenerators: tt.fields.finishedGenerators(),
 			}
-			e.sortInputs()
+			e.sortActiveGenerators()
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
@@ -355,8 +355,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 				t.Errorf("peek() = %v, want %v", got, tt.want)
 			}
 
-			require.Len(t, e.inputs, len(tt.fields.inputs()))
-			require.Len(t, e.finishedInputs, len(tt.fields.finishedInputs()))
+			require.Len(t, e.activeGenerators, len(tt.fields.activeGenerators()))
+			require.Len(t, e.finishedGenerators, len(tt.fields.finishedGenerators()))
 
 		})
 	}
@@ -366,8 +366,8 @@ func Test_eventCombinator_finished(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		inputs         []eventGenerator
-		finishedInputs []eventGenerator
+		activeGenerators   []eventGenerator
+		finishedGenerators []eventGenerator
 	}
 
 	tests := []struct {
@@ -378,16 +378,16 @@ func Test_eventCombinator_finished(t *testing.T) {
 		{
 			name: "not finished",
 			fields: fields{
-				inputs:         []eventGenerator{NewMockeventGenerator(t)},
-				finishedInputs: make([]eventGenerator, 0),
+				activeGenerators:   []eventGenerator{NewMockeventGenerator(t)},
+				finishedGenerators: make([]eventGenerator, 0),
 			},
 			want: false,
 		},
 		{
 			name: "finished",
 			fields: fields{
-				inputs:         make([]eventGenerator, 0),
-				finishedInputs: make([]eventGenerator, 0),
+				activeGenerators:   make([]eventGenerator, 0),
+				finishedGenerators: make([]eventGenerator, 0),
 			},
 			want: true,
 		},
@@ -398,8 +398,8 @@ func Test_eventCombinator_finished(t *testing.T) {
 			t.Parallel()
 
 			e := &eventCombinator{
-				inputs:         tt.fields.inputs,
-				finishedInputs: tt.fields.finishedInputs,
+				activeGenerators:   tt.fields.activeGenerators,
+				finishedGenerators: tt.fields.finishedGenerators,
 			}
 
 			if got := e.finished(); !reflect.DeepEqual(got, tt.want) {
@@ -409,22 +409,22 @@ func Test_eventCombinator_finished(t *testing.T) {
 	}
 }
 
-func Test_eventCombinator_sortInputs(t *testing.T) {
+func Test_eventCombinator_sortActiveGeneratos(t *testing.T) {
 	t.Parallel()
 
 	eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
 	eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
 	eventGenerator3 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Hour, context.Background())
 
-	inputs := []eventGenerator{eventGenerator1, eventGenerator2, eventGenerator3}
+	activeGenerators := []eventGenerator{eventGenerator1, eventGenerator2, eventGenerator3}
 
 	e := &eventCombinator{
-		inputs:         inputs,
-		finishedInputs: make([]eventGenerator, 0),
+		activeGenerators:   activeGenerators,
+		finishedGenerators: make([]eventGenerator, 0),
 	}
-	e.sortInputs()
+	e.sortActiveGenerators()
 
-	sorted := slices.IsSortedFunc(e.inputs, func(a, b eventGenerator) int {
+	sorted := slices.IsSortedFunc(e.activeGenerators, func(a, b eventGenerator) int {
 		return a.peek().Time.Compare(b.peek().Time)
 	})
 	require.True(t, sorted)

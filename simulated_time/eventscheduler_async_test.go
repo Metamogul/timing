@@ -141,8 +141,8 @@ func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
 	}
 	e.PerformAfter(timing.NewMockAction(t), time.Second, context.Background())
 
-	require.Len(t, e.eventGenerators.inputs, 1)
-	require.IsType(t, &singleEventGenerator{}, e.eventGenerators.inputs[0])
+	require.Len(t, e.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &singleEventGenerator{}, e.eventGenerators.activeGenerators[0])
 }
 
 func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
@@ -156,6 +156,6 @@ func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
 	}
 	e.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second, context.Background())
 
-	require.Len(t, e.eventGenerators.inputs, 1)
-	require.IsType(t, &periodicEventGenerator{}, e.eventGenerators.inputs[0])
+	require.Len(t, e.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &periodicEventGenerator{}, e.eventGenerators.activeGenerators[0])
 }

@@ -48,9 +48,9 @@ func (a *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldCon
 }
 
 func (a *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
-	a.eventGenerators.addInput(newSingleEventGenerator(action, a.now.Add(interval), ctx))
+	a.eventGenerators.add(newSingleEventGenerator(action, a.now.Add(interval), ctx))
 }
 
 func (a *SerialEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
-	a.eventGenerators.addInput(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
+	a.eventGenerators.add(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
 }
