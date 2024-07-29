@@ -18,7 +18,7 @@ func Test_incrementAfterOneMinute(t *testing.T) {
 
 	r.incrementAfterOneMinute(scheduler)
 
-	scheduler.Forward(time.Minute * 15)
+	scheduler.Forward(time.Minute * 60)
 	require.Equal(t, 1, r.counter)
 }
 

@@ -17,12 +17,14 @@ type EventScheduler struct {
 }
 
 func (e *EventScheduler) PerformAfter(action timing.Action, duration time.Duration, ctx context.Context) {
-	select {
-	case <-time.After(duration):
-		action.Perform(e.Clock)
-	case <-ctx.Done():
-		return
-	}
+	go func() {
+		select {
+		case <-time.After(duration):
+			action.Perform(e.Clock)
+		case <-ctx.Done():
+			return
+		}
+	}()
 }
 
 func (e *EventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
