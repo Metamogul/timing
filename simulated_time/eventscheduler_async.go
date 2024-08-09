@@ -80,6 +80,9 @@ func (a *AsyncEventScheduler) ForwardToNextEvent() {
 }
 
 func (a *AsyncEventScheduler) PerformNow(action timing.Action, ctx context.Context) {
+	a.eventGeneratorsMu.Lock()
+	defer a.eventGeneratorsMu.Unlock()
+
 	a.eventGenerators.add(newSingleEventGenerator(action, a.now, ctx))
 }
 
