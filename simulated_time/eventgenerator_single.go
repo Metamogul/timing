@@ -18,8 +18,8 @@ func newSingleEventGenerator(action timing.Action, time time.Time, ctx context.C
 	}
 }
 
-func (s *singleEventGenerator) pop() *event {
-	if s.finished() {
+func (s *singleEventGenerator) Pop() *event {
+	if s.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
@@ -28,14 +28,14 @@ func (s *singleEventGenerator) pop() *event {
 	return s.event
 }
 
-func (s *singleEventGenerator) peek() event {
-	if s.finished() {
+func (s *singleEventGenerator) Peek() event {
+	if s.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
 	return *s.event
 }
 
-func (s *singleEventGenerator) finished() bool {
+func (s *singleEventGenerator) Finished() bool {
 	return s.event == nil || s.ctx.Err() != nil
 }

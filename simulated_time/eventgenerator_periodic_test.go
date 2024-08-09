@@ -208,19 +208,19 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = p.pop()
+					_ = p.Pop()
 				})
 				return
 			}
 
-			if got := p.pop(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("pop() = %v, want %v", got, tt.want)
+			if got := p.Pop(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Pop() = %v, want %v", got, tt.want)
 			}
 
 			if tt.requireFinished {
-				require.True(t, p.finished())
+				require.True(t, p.Finished())
 			} else {
-				require.False(t, p.finished())
+				require.False(t, p.Finished())
 			}
 		})
 	}
@@ -285,16 +285,16 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = p.peek()
+					_ = p.Peek()
 				})
 				return
 			}
 
-			if got := p.peek(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("peek() = %v, want %v", got, tt.want)
+			if got := p.Peek(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Peek() = %v, want %v", got, tt.want)
 			}
 
-			require.False(t, p.finished())
+			require.False(t, p.Finished())
 		})
 	}
 }
@@ -382,7 +382,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 				ctx:          tt.fields.ctx,
 			}
 
-			require.Equal(t, tt.want, p.finished())
+			require.Equal(t, tt.want, p.Finished())
 		})
 	}
 }

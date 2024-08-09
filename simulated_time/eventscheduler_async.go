@@ -36,17 +36,17 @@ func (a *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldCont
 	a.eventGeneratorsMu.RLock()
 	defer a.eventGeneratorsMu.RUnlock()
 
-	if a.eventGenerators.finished() {
+	if a.eventGenerators.Finished() {
 		a.clock.set(targetTime)
 		return false
 	}
 
-	if a.eventGenerators.peek().After(targetTime) {
+	if a.eventGenerators.Peek().After(targetTime) {
 		a.clock.set(targetTime)
 		return false
 	}
 
-	nextEvent := a.eventGenerators.pop()
+	nextEvent := a.eventGenerators.Pop()
 	a.clock.set(nextEvent.Time)
 
 	currentClock := a.clock.copy()
@@ -63,11 +63,11 @@ func (a *AsyncEventScheduler) ForwardToNextEvent() {
 	a.eventGeneratorsMu.RLock()
 	defer a.eventGeneratorsMu.RUnlock()
 
-	if a.eventGenerators.finished() {
+	if a.eventGenerators.Finished() {
 		return
 	}
 
-	nextEvent := a.eventGenerators.pop()
+	nextEvent := a.eventGenerators.Pop()
 	a.clock.set(nextEvent.Time)
 
 	currentClock := a.clock.copy()
@@ -80,22 +80,20 @@ func (a *AsyncEventScheduler) ForwardToNextEvent() {
 }
 
 func (a *AsyncEventScheduler) PerformNow(action timing.Action, ctx context.Context) {
-	a.eventGeneratorsMu.Lock()
-	defer a.eventGeneratorsMu.Unlock()
-
-	a.eventGenerators.add(newSingleEventGenerator(action, a.now, ctx))
+	a.AddGenerator(newSingleEventGenerator(action, a.now, ctx))
 }
 
 func (a *AsyncEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
-	a.eventGeneratorsMu.Lock()
-	defer a.eventGeneratorsMu.Unlock()
-
-	a.eventGenerators.add(newSingleEventGenerator(action, a.now.Add(interval), ctx))
+	a.AddGenerator(newSingleEventGenerator(action, a.now.Add(interval), ctx))
 }
 
 func (a *AsyncEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
+	a.AddGenerator(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
+}
+
+func (a *AsyncEventScheduler) AddGenerator(generator EventGenerator) {
 	a.eventGeneratorsMu.Lock()
 	defer a.eventGeneratorsMu.Unlock()
 
-	a.eventGenerators.add(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
+	a.eventGenerators.add(generator)
 }

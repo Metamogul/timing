@@ -5,18 +5,18 @@ import (
 )
 
 type eventCombinator struct {
-	activeGenerators   []eventGenerator
-	finishedGenerators []eventGenerator
+	activeGenerators   []EventGenerator
+	finishedGenerators []EventGenerator
 }
 
-func newEventCombinator(inputs ...eventGenerator) *eventCombinator {
+func newEventCombinator(inputs ...EventGenerator) *eventCombinator {
 	combinator := &eventCombinator{
-		activeGenerators:   make([]eventGenerator, 0),
-		finishedGenerators: make([]eventGenerator, 0),
+		activeGenerators:   make([]EventGenerator, 0),
+		finishedGenerators: make([]EventGenerator, 0),
 	}
 
 	for _, input := range inputs {
-		if input.finished() {
+		if input.Finished() {
 			combinator.finishedGenerators = append(combinator.finishedGenerators, input)
 		} else {
 			combinator.activeGenerators = append(combinator.activeGenerators, input)
@@ -28,8 +28,8 @@ func newEventCombinator(inputs ...eventGenerator) *eventCombinator {
 	return combinator
 }
 
-func (e *eventCombinator) add(generator eventGenerator) {
-	if generator.finished() {
+func (e *eventCombinator) add(generator EventGenerator) {
+	if generator.Finished() {
 		e.finishedGenerators = append(e.finishedGenerators, generator)
 		return
 	}
@@ -39,14 +39,14 @@ func (e *eventCombinator) add(generator eventGenerator) {
 	e.sortActiveGenerators()
 }
 
-func (e *eventCombinator) pop() *event {
-	if e.finished() {
+func (e *eventCombinator) Pop() *event {
+	if e.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
-	nextEvent := e.activeGenerators[0].pop()
+	nextEvent := e.activeGenerators[0].Pop()
 
-	if e.activeGenerators[0].finished() {
+	if e.activeGenerators[0].Finished() {
 		e.finishedGenerators = append(e.finishedGenerators, e.activeGenerators[0])
 		e.activeGenerators = e.activeGenerators[1:]
 	}
@@ -56,20 +56,20 @@ func (e *eventCombinator) pop() *event {
 	return nextEvent
 }
 
-func (e *eventCombinator) peek() event {
-	if e.finished() {
+func (e *eventCombinator) Peek() event {
+	if e.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
-	return e.activeGenerators[0].peek()
+	return e.activeGenerators[0].Peek()
 }
 
-func (e *eventCombinator) finished() bool {
+func (e *eventCombinator) Finished() bool {
 	return len(e.activeGenerators) == 0
 }
 
 func (e *eventCombinator) sortActiveGenerators() {
-	slices.SortStableFunc(e.activeGenerators, func(a, b eventGenerator) int {
-		return a.peek().Time.Compare(b.peek().Time)
+	slices.SortStableFunc(e.activeGenerators, func(a, b EventGenerator) int {
+		return a.Peek().Time.Compare(b.Peek().Time)
 	})
 }

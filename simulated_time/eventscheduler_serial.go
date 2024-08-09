@@ -27,17 +27,17 @@ func (s *SerialEventScheduler) Forward(interval time.Duration) {
 }
 
 func (s *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldContinue bool) {
-	if s.eventGenerators.finished() {
+	if s.eventGenerators.Finished() {
 		s.clock.set(targetTime)
 		return false
 	}
 
-	if s.eventGenerators.peek().After(targetTime) {
+	if s.eventGenerators.Peek().After(targetTime) {
 		s.clock.set(targetTime)
 		return false
 	}
 
-	nextEvent := s.eventGenerators.pop()
+	nextEvent := s.eventGenerators.Pop()
 	s.clock.set(nextEvent.Time)
 
 	nextEvent.Perform(s.clock.copy())
@@ -46,24 +46,28 @@ func (s *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldCon
 }
 
 func (s *SerialEventScheduler) ForwardToNextEvent() {
-	if s.eventGenerators.finished() {
+	if s.eventGenerators.Finished() {
 		return
 	}
 
-	nextEvent := s.eventGenerators.pop()
+	nextEvent := s.eventGenerators.Pop()
 	s.clock.set(nextEvent.Time)
 
 	nextEvent.Perform(s.clock.copy())
 }
 
-func (a *SerialEventScheduler) PerformNow(action timing.Action, ctx context.Context) {
-	a.eventGenerators.add(newSingleEventGenerator(action, a.now, ctx))
+func (s *SerialEventScheduler) PerformNow(action timing.Action, ctx context.Context) {
+	s.AddGenerator(newSingleEventGenerator(action, s.now, ctx))
 }
 
 func (s *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
-	s.eventGenerators.add(newSingleEventGenerator(action, s.now.Add(interval), ctx))
+	s.AddGenerator(newSingleEventGenerator(action, s.now.Add(interval), ctx))
 }
 
 func (s *SerialEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
-	s.eventGenerators.add(newPeriodicEventGenerator(action, s.Now(), until, interval, ctx))
+	s.AddGenerator(newPeriodicEventGenerator(action, s.Now(), until, interval, ctx))
+}
+
+func (s *SerialEventScheduler) AddGenerator(generator EventGenerator) {
+	s.eventGenerators.add(generator)
 }

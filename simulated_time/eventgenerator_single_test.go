@@ -111,19 +111,19 @@ func Test_singleEventStream_pop(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = s.pop()
+					_ = s.Pop()
 				})
 				return
 			}
 
-			if got := s.pop(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("pop() = %v, want %v", got, tt.want)
+			if got := s.Pop(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Pop() = %v, want %v", got, tt.want)
 			}
 
 			if tt.want != nil {
-				require.True(t, s.finished())
+				require.True(t, s.Finished())
 			} else {
-				require.False(t, s.finished())
+				require.False(t, s.Finished())
 			}
 		})
 	}
@@ -172,16 +172,16 @@ func Test_singleEventStream_peek(t *testing.T) {
 
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = s.peek()
+					_ = s.Peek()
 				})
 				return
 			}
 
-			if got := s.peek(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("peek() = %v, want %v", got, tt.want)
+			if got := s.Peek(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Peek() = %v, want %v", got, tt.want)
 			}
 
-			require.False(t, s.finished())
+			require.False(t, s.Finished())
 		})
 	}
 }
@@ -237,8 +237,8 @@ func Test_singleEventStream_finished(t *testing.T) {
 				ctx:   tt.fields.ctx,
 			}
 
-			if got := s.finished(); got != tt.want {
-				t.Errorf("finished() = %v, want %v", got, tt.want)
+			if got := s.Finished(); got != tt.want {
+				t.Errorf("Finished() = %v, want %v", got, tt.want)
 			}
 		})
 	}

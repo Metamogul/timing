@@ -57,7 +57,7 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 		}).
 		Once()
 
-	eventGenerators := []eventGenerator{
+	eventGenerators := []EventGenerator{
 		newSingleEventGenerator(longRunningAction1, now.Add(1*time.Millisecond), context.Background()),
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Millisecond), context.Background()),
 	}
@@ -81,27 +81,27 @@ func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		eventGenerators    func() []eventGenerator
+		eventGenerators    func() []EventGenerator
 		wantShouldContinue bool
 	}{
 		{
 			name:            "all event generators finished",
-			eventGenerators: func() []eventGenerator { return nil },
+			eventGenerators: func() []EventGenerator { return nil },
 		},
 		{
 			name: "next event after target time",
-			eventGenerators: func() []eventGenerator {
-				return []eventGenerator{newSingleEventGenerator(timing.NewMockAction(t), now.Add(1*time.Hour), context.Background())}
+			eventGenerators: func() []EventGenerator {
+				return []EventGenerator{newSingleEventGenerator(timing.NewMockAction(t), now.Add(1*time.Hour), context.Background())}
 			},
 		},
 		{
 			name: "event dispatched successfully",
-			eventGenerators: func() []eventGenerator {
+			eventGenerators: func() []EventGenerator {
 				mockAction := timing.NewMockAction(t)
 				mockAction.EXPECT().
 					Perform(mock.Anything).
 					Once()
-				return []eventGenerator{newSingleEventGenerator(mockAction, now.Add(1*time.Second), context.Background())}
+				return []EventGenerator{newSingleEventGenerator(mockAction, now.Add(1*time.Second), context.Background())}
 			},
 			wantShouldContinue: true,
 		},
@@ -162,7 +162,7 @@ func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
 		}).
 		Once()
 
-	eventGenerators := []eventGenerator{
+	eventGenerators := []EventGenerator{
 		newSingleEventGenerator(longRunningAction1, now.Add(1*time.Second), context.Background()),
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Second), context.Background()),
 	}
@@ -226,4 +226,21 @@ func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
 
 	require.Len(t, a.eventGenerators.activeGenerators, 1)
 	require.IsType(t, &periodicEventGenerator{}, a.eventGenerators.activeGenerators[0])
+}
+
+func TestAsyncEventScheduler_AddGenerator(t *testing.T) {
+	t.Parallel()
+
+	mockEventGenerator := NewMockEventGenerator(t)
+	mockEventGenerator.EXPECT().
+		Finished().
+		Return(false).
+		Once()
+
+	a := &AsyncEventScheduler{
+		eventGenerators: newEventCombinator(),
+	}
+	a.AddGenerator(mockEventGenerator)
+
+	require.Len(t, a.eventGenerators.activeGenerators, 1)
 }

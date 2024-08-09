@@ -54,8 +54,8 @@ func newPeriodicEventGenerator(
 	}
 }
 
-func (p *periodicEventGenerator) pop() *event {
-	if p.finished() {
+func (p *periodicEventGenerator) Pop() *event {
+	if p.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
@@ -64,15 +64,15 @@ func (p *periodicEventGenerator) pop() *event {
 	return p.currentEvent
 }
 
-func (p *periodicEventGenerator) peek() event {
-	if p.finished() {
+func (p *periodicEventGenerator) Peek() event {
+	if p.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
 	return *p.currentEvent
 }
 
-func (p *periodicEventGenerator) finished() bool {
+func (p *periodicEventGenerator) Finished() bool {
 	if p.ctx.Err() != nil {
 		return true
 	}
