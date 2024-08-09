@@ -63,12 +63,12 @@ func TestSerialEventScheduler_Forward(t *testing.T) {
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Millisecond), context.Background()),
 	}
 
-	e := &SerialEventScheduler{
+	s := &SerialEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(eventGenerators...),
 	}
 
-	e.Forward(3 * time.Millisecond)
+	s.Forward(3 * time.Millisecond)
 
 	sorted := slices.IsSortedFunc(eventTimes, func(a, b time.Time) int {
 		return a.Compare(b)
@@ -83,7 +83,7 @@ func TestSerialEventScheduler_Forward_RecursiveScheduling(t *testing.T) {
 
 	eventTimes := make([]time.Time, 0)
 
-	e := &SerialEventScheduler{
+	s := &SerialEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
@@ -100,14 +100,14 @@ func TestSerialEventScheduler_Forward_RecursiveScheduling(t *testing.T) {
 	outerAction.EXPECT().
 		Perform(mock.Anything).
 		Run(func(clock timing.Clock) {
-			e.PerformAfter(innerAction, time.Second, context.Background())
+			s.PerformAfter(innerAction, time.Second, context.Background())
 			eventTimes = append(eventTimes, clock.Now())
 		}).
 		Once()
 
-	e.PerformAfter(outerAction, time.Second, context.Background())
+	s.PerformAfter(outerAction, time.Second, context.Background())
 
-	e.Forward(3 * time.Second)
+	s.Forward(3 * time.Second)
 
 	sorted := slices.IsSortedFunc(eventTimes, func(a, b time.Time) int {
 		return a.Compare(b)
@@ -153,19 +153,19 @@ func TestSerialEventScheduler_performNextEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &SerialEventScheduler{
+			s := &SerialEventScheduler{
 				clock:           newClock(now),
 				eventGenerators: newEventCombinator(tt.eventGenerators()...),
 			}
 
-			if gotShouldContinue := e.performNextEvent(targetTime); gotShouldContinue != tt.wantShouldContinue {
+			if gotShouldContinue := s.performNextEvent(targetTime); gotShouldContinue != tt.wantShouldContinue {
 				t.Errorf("performNextEventSerially() = %v, want %v", gotShouldContinue, tt.wantShouldContinue)
 			}
 
 			if tt.wantShouldContinue == true {
-				require.Equal(t, now.Add(time.Second), e.Now())
+				require.Equal(t, now.Add(time.Second), s.Now())
 			} else {
-				require.Equal(t, targetTime, e.Now())
+				require.Equal(t, targetTime, s.Now())
 			}
 		})
 	}
@@ -201,20 +201,20 @@ func TestSerialEventScheduler_ForwardToNextEvent(t *testing.T) {
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Second), context.Background()),
 	}
 
-	e := &SerialEventScheduler{
+	s := &SerialEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(eventGenerators...),
 	}
 
-	e.ForwardToNextEvent()
+	s.ForwardToNextEvent()
 	require.Len(t, eventTimes, 1)
 	require.Equal(t, now.Add(1*time.Second), eventTimes[0])
-	require.Equal(t, now.Add(1*time.Second), e.Now())
+	require.Equal(t, now.Add(1*time.Second), s.Now())
 
-	e.ForwardToNextEvent()
+	s.ForwardToNextEvent()
 	require.Len(t, eventTimes, 2)
 	require.Equal(t, now.Add(2*time.Second), eventTimes[1])
-	require.Equal(t, now.Add(2*time.Second), e.Now())
+	require.Equal(t, now.Add(2*time.Second), s.Now())
 }
 
 func TestSerialEventScheduler_PerformAfter(t *testing.T) {
@@ -222,14 +222,14 @@ func TestSerialEventScheduler_PerformAfter(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	e := &SerialEventScheduler{
+	s := &SerialEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformAfter(timing.NewMockAction(t), time.Second, context.Background())
+	s.PerformAfter(timing.NewMockAction(t), time.Second, context.Background())
 
-	require.Len(t, e.eventGenerators.activeGenerators, 1)
-	require.IsType(t, &singleEventGenerator{}, e.eventGenerators.activeGenerators[0])
+	require.Len(t, s.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &singleEventGenerator{}, s.eventGenerators.activeGenerators[0])
 }
 
 func TestSerialEventScheduler_PerformRepeatedly(t *testing.T) {
@@ -237,12 +237,12 @@ func TestSerialEventScheduler_PerformRepeatedly(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	e := &SerialEventScheduler{
+	s := &SerialEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second, context.Background())
+	s.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second, context.Background())
 
-	require.Len(t, e.eventGenerators.activeGenerators, 1)
-	require.IsType(t, &periodicEventGenerator{}, e.eventGenerators.activeGenerators[0])
+	require.Len(t, s.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &periodicEventGenerator{}, s.eventGenerators.activeGenerators[0])
 }

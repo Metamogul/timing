@@ -19,47 +19,47 @@ func NewSerialEventScheduler(now time.Time) *SerialEventScheduler {
 	}
 }
 
-func (a *SerialEventScheduler) Forward(interval time.Duration) {
-	targetTime := a.clock.Now().Add(interval)
+func (s *SerialEventScheduler) Forward(interval time.Duration) {
+	targetTime := s.clock.Now().Add(interval)
 
-	for a.performNextEvent(targetTime) {
+	for s.performNextEvent(targetTime) {
 	}
 }
 
-func (a *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldContinue bool) {
-	if a.eventGenerators.finished() {
-		a.clock.set(targetTime)
+func (s *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldContinue bool) {
+	if s.eventGenerators.finished() {
+		s.clock.set(targetTime)
 		return false
 	}
 
-	if a.eventGenerators.peek().After(targetTime) {
-		a.clock.set(targetTime)
+	if s.eventGenerators.peek().After(targetTime) {
+		s.clock.set(targetTime)
 		return false
 	}
 
-	nextEvent := a.eventGenerators.pop()
-	a.clock.set(nextEvent.Time)
+	nextEvent := s.eventGenerators.pop()
+	s.clock.set(nextEvent.Time)
 
-	nextEvent.Perform(a.clock.copy())
+	nextEvent.Perform(s.clock.copy())
 
 	return true
 }
 
-func (a *SerialEventScheduler) ForwardToNextEvent() {
-	if a.eventGenerators.finished() {
+func (s *SerialEventScheduler) ForwardToNextEvent() {
+	if s.eventGenerators.finished() {
 		return
 	}
 
-	nextEvent := a.eventGenerators.pop()
-	a.clock.set(nextEvent.Time)
+	nextEvent := s.eventGenerators.pop()
+	s.clock.set(nextEvent.Time)
 
-	nextEvent.Perform(a.clock.copy())
+	nextEvent.Perform(s.clock.copy())
 }
 
-func (a *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
-	a.eventGenerators.add(newSingleEventGenerator(action, a.now.Add(interval), ctx))
+func (s *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
+	s.eventGenerators.add(newSingleEventGenerator(action, s.now.Add(interval), ctx))
 }
 
-func (a *SerialEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
-	a.eventGenerators.add(newPeriodicEventGenerator(action, a.Now(), until, interval, ctx))
+func (s *SerialEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {
+	s.eventGenerators.add(newPeriodicEventGenerator(action, s.Now(), until, interval, ctx))
 }

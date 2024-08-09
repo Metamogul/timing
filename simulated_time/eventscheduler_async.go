@@ -23,67 +23,67 @@ func NewAsyncEventScheduler(now time.Time) *SerialEventScheduler {
 	}
 }
 
-func (e *AsyncEventScheduler) Forward(interval time.Duration) {
-	targetTime := e.clock.Now().Add(interval)
+func (a *AsyncEventScheduler) Forward(interval time.Duration) {
+	targetTime := a.clock.Now().Add(interval)
 
-	for e.performNextEvent(targetTime) {
+	for a.performNextEvent(targetTime) {
 	}
 
-	e.wg.Wait()
+	a.wg.Wait()
 }
 
-func (e *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldContinue bool) {
-	e.eventGeneratorsMu.RLock()
-	defer e.eventGeneratorsMu.RUnlock()
+func (a *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldContinue bool) {
+	a.eventGeneratorsMu.RLock()
+	defer a.eventGeneratorsMu.RUnlock()
 
-	if e.eventGenerators.finished() {
-		e.clock.set(targetTime)
+	if a.eventGenerators.finished() {
+		a.clock.set(targetTime)
 		return false
 	}
 
-	if e.eventGenerators.peek().After(targetTime) {
-		e.clock.set(targetTime)
+	if a.eventGenerators.peek().After(targetTime) {
+		a.clock.set(targetTime)
 		return false
 	}
 
-	nextEvent := e.eventGenerators.pop()
-	e.clock.set(nextEvent.Time)
+	nextEvent := a.eventGenerators.pop()
+	a.clock.set(nextEvent.Time)
 
-	currentClock := e.clock.copy()
-	e.wg.Add(1)
+	currentClock := a.clock.copy()
+	a.wg.Add(1)
 	go func() {
-		defer e.wg.Done()
+		defer a.wg.Done()
 		nextEvent.Perform(currentClock)
 	}()
 
 	return true
 }
 
-func (e *AsyncEventScheduler) ForwardToNextEvent() {
-	e.eventGeneratorsMu.RLock()
-	defer e.eventGeneratorsMu.RUnlock()
+func (a *AsyncEventScheduler) ForwardToNextEvent() {
+	a.eventGeneratorsMu.RLock()
+	defer a.eventGeneratorsMu.RUnlock()
 
-	if e.eventGenerators.finished() {
+	if a.eventGenerators.finished() {
 		return
 	}
 
-	nextEvent := e.eventGenerators.pop()
-	e.clock.set(nextEvent.Time)
+	nextEvent := a.eventGenerators.pop()
+	a.clock.set(nextEvent.Time)
 
-	currentClock := e.clock.copy()
-	e.wg.Add(1)
+	currentClock := a.clock.copy()
+	a.wg.Add(1)
 	go func() {
-		defer e.wg.Done()
+		defer a.wg.Done()
 		nextEvent.Perform(currentClock)
 	}()
-	e.wg.Wait()
+	a.wg.Wait()
 }
 
-func (e *AsyncEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
-	e.eventGeneratorsMu.Lock()
-	defer e.eventGeneratorsMu.Unlock()
+func (a *AsyncEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
+	a.eventGeneratorsMu.Lock()
+	defer a.eventGeneratorsMu.Unlock()
 
-	e.eventGenerators.add(newSingleEventGenerator(action, e.now.Add(interval), ctx))
+	a.eventGenerators.add(newSingleEventGenerator(action, a.now.Add(interval), ctx))
 }
 
 func (a *AsyncEventScheduler) PerformRepeatedly(action timing.Action, until *time.Time, interval time.Duration, ctx context.Context) {

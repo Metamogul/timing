@@ -62,12 +62,12 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Millisecond), context.Background()),
 	}
 
-	e := &AsyncEventScheduler{
+	a := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(eventGenerators...),
 	}
 
-	e.Forward(3 * time.Millisecond)
+	a.Forward(3 * time.Millisecond)
 
 	require.Equal(t, now.Add(2*time.Millisecond), eventTimes[0])
 	require.Equal(t, now.Add(1*time.Millisecond), eventTimes[1])
@@ -111,20 +111,20 @@ func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e := &AsyncEventScheduler{
+			a := &AsyncEventScheduler{
 				clock:           newClock(now),
 				eventGenerators: newEventCombinator(tt.eventGenerators()...),
 			}
 
-			if gotShouldContinue := e.performNextEvent(targetTime); gotShouldContinue != tt.wantShouldContinue {
+			if gotShouldContinue := a.performNextEvent(targetTime); gotShouldContinue != tt.wantShouldContinue {
 				t.Errorf("performNextEvent() = %v, want %v", gotShouldContinue, tt.wantShouldContinue)
 			}
-			e.wg.Wait()
+			a.wg.Wait()
 
 			if tt.wantShouldContinue == true {
-				require.Equal(t, now.Add(time.Second), e.Now())
+				require.Equal(t, now.Add(time.Second), a.Now())
 			} else {
-				require.Equal(t, targetTime, e.Now())
+				require.Equal(t, targetTime, a.Now())
 			}
 		})
 	}
@@ -167,20 +167,20 @@ func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
 		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Second), context.Background()),
 	}
 
-	e := &AsyncEventScheduler{
+	a := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(eventGenerators...),
 	}
 
-	e.ForwardToNextEvent()
+	a.ForwardToNextEvent()
 	require.Len(t, eventTimes, 1)
 	require.Equal(t, now.Add(1*time.Second), eventTimes[0])
-	require.Equal(t, now.Add(1*time.Second), e.Now())
+	require.Equal(t, now.Add(1*time.Second), a.Now())
 
-	e.ForwardToNextEvent()
+	a.ForwardToNextEvent()
 	require.Len(t, eventTimes, 2)
 	require.Equal(t, now.Add(2*time.Second), eventTimes[1])
-	require.Equal(t, now.Add(2*time.Second), e.Now())
+	require.Equal(t, now.Add(2*time.Second), a.Now())
 }
 
 func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
@@ -188,14 +188,14 @@ func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	e := &AsyncEventScheduler{
+	a := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformAfter(timing.NewMockAction(t), time.Second, context.Background())
+	a.PerformAfter(timing.NewMockAction(t), time.Second, context.Background())
 
-	require.Len(t, e.eventGenerators.activeGenerators, 1)
-	require.IsType(t, &singleEventGenerator{}, e.eventGenerators.activeGenerators[0])
+	require.Len(t, a.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &singleEventGenerator{}, a.eventGenerators.activeGenerators[0])
 }
 
 func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
@@ -203,12 +203,12 @@ func TestAsyncEventScheduler_PerformRepeatedly(t *testing.T) {
 
 	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	e := &AsyncEventScheduler{
+	a := &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}
-	e.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second, context.Background())
+	a.PerformRepeatedly(timing.NewMockAction(t), nil, time.Second, context.Background())
 
-	require.Len(t, e.eventGenerators.activeGenerators, 1)
-	require.IsType(t, &periodicEventGenerator{}, e.eventGenerators.activeGenerators[0])
+	require.Len(t, a.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &periodicEventGenerator{}, a.eventGenerators.activeGenerators[0])
 }
