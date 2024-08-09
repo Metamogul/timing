@@ -59,6 +59,26 @@ func (e *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldCont
 	return true
 }
 
+func (e *AsyncEventScheduler) ForwardToNextEvent() {
+	e.eventGeneratorsMu.RLock()
+	defer e.eventGeneratorsMu.RUnlock()
+
+	if e.eventGenerators.finished() {
+		return
+	}
+
+	nextEvent := e.eventGenerators.pop()
+	e.clock.set(nextEvent.Time)
+
+	currentClock := e.clock.copy()
+	e.wg.Add(1)
+	go func() {
+		defer e.wg.Done()
+		nextEvent.Perform(currentClock)
+	}()
+	e.wg.Wait()
+}
+
 func (e *AsyncEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
 	e.eventGeneratorsMu.Lock()
 	defer e.eventGeneratorsMu.Unlock()

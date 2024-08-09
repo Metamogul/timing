@@ -130,6 +130,59 @@ func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
 	}
 }
 
+func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	mu := sync.Mutex{}
+	eventTimes := make([]time.Time, 0)
+
+	longRunningAction1 := timing.NewMockAction(t)
+	longRunningAction1.EXPECT().
+		Perform(mock.Anything).
+		Run(func(clock timing.Clock) {
+			time.Sleep(100 * time.Millisecond)
+
+			mu.Lock()
+			eventTimes = append(eventTimes, clock.Now())
+			mu.Unlock()
+		}).
+		Once()
+
+	longRunningAction2 := timing.NewMockAction(t)
+	longRunningAction2.EXPECT().
+		Perform(mock.Anything).
+		Run(func(clock timing.Clock) {
+			time.Sleep(50 * time.Millisecond)
+
+			mu.Lock()
+			eventTimes = append(eventTimes, clock.Now())
+			mu.Unlock()
+		}).
+		Once()
+
+	eventGenerators := []eventGenerator{
+		newSingleEventGenerator(longRunningAction1, now.Add(1*time.Second), context.Background()),
+		newSingleEventGenerator(longRunningAction2, now.Add(2*time.Second), context.Background()),
+	}
+
+	e := &AsyncEventScheduler{
+		clock:           newClock(now),
+		eventGenerators: newEventCombinator(eventGenerators...),
+	}
+
+	e.ForwardToNextEvent()
+	require.Len(t, eventTimes, 1)
+	require.Equal(t, now.Add(1*time.Second), eventTimes[0])
+	require.Equal(t, now.Add(1*time.Second), e.Now())
+
+	e.ForwardToNextEvent()
+	require.Len(t, eventTimes, 2)
+	require.Equal(t, now.Add(2*time.Second), eventTimes[1])
+	require.Equal(t, now.Add(2*time.Second), e.Now())
+}
+
 func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
 	t.Parallel()
 

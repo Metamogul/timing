@@ -3,15 +3,13 @@ package simulated_time
 import (
 	"context"
 	"github.com/metamogul/timing"
-	"sync"
 	"time"
 )
 
 type SerialEventScheduler struct {
 	*clock
 
-	eventGenerators   *eventCombinator
-	eventGeneratorsMu sync.RWMutex
+	eventGenerators *eventCombinator
 }
 
 func NewSerialEventScheduler(now time.Time) *SerialEventScheduler {
@@ -45,6 +43,17 @@ func (a *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldCon
 	nextEvent.Perform(a.clock.copy())
 
 	return true
+}
+
+func (a *SerialEventScheduler) ForwardToNextEvent() {
+	if a.eventGenerators.finished() {
+		return
+	}
+
+	nextEvent := a.eventGenerators.pop()
+	a.clock.set(nextEvent.Time)
+
+	nextEvent.Perform(a.clock.copy())
 }
 
 func (a *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
