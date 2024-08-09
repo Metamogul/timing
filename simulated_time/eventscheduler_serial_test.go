@@ -217,6 +217,21 @@ func TestSerialEventScheduler_ForwardToNextEvent(t *testing.T) {
 	require.Equal(t, now.Add(2*time.Second), s.Now())
 }
 
+func TestSerialEventScheduler_PerformNow(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	s := &SerialEventScheduler{
+		clock:           newClock(now),
+		eventGenerators: newEventCombinator(),
+	}
+	s.PerformNow(timing.NewMockAction(t), context.Background())
+
+	require.Len(t, s.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &singleEventGenerator{}, s.eventGenerators.activeGenerators[0])
+}
+
 func TestSerialEventScheduler_PerformAfter(t *testing.T) {
 	t.Parallel()
 

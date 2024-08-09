@@ -79,6 +79,10 @@ func (a *AsyncEventScheduler) ForwardToNextEvent() {
 	a.wg.Wait()
 }
 
+func (a *AsyncEventScheduler) PerformNow(action timing.Action, ctx context.Context) {
+	a.eventGenerators.add(newSingleEventGenerator(action, a.now, ctx))
+}
+
 func (a *AsyncEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
 	a.eventGeneratorsMu.Lock()
 	defer a.eventGeneratorsMu.Unlock()

@@ -16,6 +16,17 @@ type EventScheduler struct {
 	Clock
 }
 
+func (e *EventScheduler) PerformNow(action timing.Action, ctx context.Context) {
+	go func() {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			action.Perform(e.Clock)
+		}
+	}()
+}
+
 func (e *EventScheduler) PerformAfter(action timing.Action, duration time.Duration, ctx context.Context) {
 	go func() {
 		select {

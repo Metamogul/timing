@@ -8,6 +8,38 @@ import (
 	"time"
 )
 
+func TestEventScheduler_PerformNow(t *testing.T) {
+	t.Parallel()
+
+	clock := Clock{}
+	s := &EventScheduler{Clock: clock}
+
+	wg := &sync.WaitGroup{}
+
+	mockAction := timing.NewMockAction(t)
+	mockAction.EXPECT().
+		Perform(clock).
+		Run(func(timing.Clock) { wg.Done() }).
+		Once()
+
+	wg.Add(1)
+	s.PerformNow(mockAction, context.Background())
+	wg.Wait()
+}
+
+func TestEventScheduler_PerformNow_cancelled(t *testing.T) {
+	t.Parallel()
+
+	clock := Clock{}
+	s := &EventScheduler{Clock: clock}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	s.PerformNow(timing.NewMockAction(t), ctx)
+	time.Sleep(2 * time.Millisecond)
+}
+
 func TestEventScheduler_PerformAfter(t *testing.T) {
 	t.Parallel()
 

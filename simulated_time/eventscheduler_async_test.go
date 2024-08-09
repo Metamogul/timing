@@ -183,6 +183,21 @@ func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
 	require.Equal(t, now.Add(2*time.Second), a.Now())
 }
 
+func TestAsyncEventScheduler_PerformNow(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	a := &AsyncEventScheduler{
+		clock:           newClock(now),
+		eventGenerators: newEventCombinator(),
+	}
+	a.PerformNow(timing.NewMockAction(t), context.Background())
+
+	require.Len(t, a.eventGenerators.activeGenerators, 1)
+	require.IsType(t, &singleEventGenerator{}, a.eventGenerators.activeGenerators[0])
+}
+
 func TestAsyncEventScheduler_PerformAfter(t *testing.T) {
 	t.Parallel()
 

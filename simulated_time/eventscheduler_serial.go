@@ -56,6 +56,10 @@ func (s *SerialEventScheduler) ForwardToNextEvent() {
 	nextEvent.Perform(s.clock.copy())
 }
 
+func (a *SerialEventScheduler) PerformNow(action timing.Action, ctx context.Context) {
+	a.eventGenerators.add(newSingleEventGenerator(action, a.now, ctx))
+}
+
 func (s *SerialEventScheduler) PerformAfter(action timing.Action, interval time.Duration, ctx context.Context) {
 	s.eventGenerators.add(newSingleEventGenerator(action, s.now.Add(interval), ctx))
 }
