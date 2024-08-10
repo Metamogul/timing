@@ -7,8 +7,8 @@ import (
 var ErrEventGeneratorFinished = errors.New("event generator is finished")
 
 type EventGenerator interface {
-	Pop() *event
-	Peek() event
+	Pop() *Event
+	Peek() Event
 
 	Finished() bool
 }

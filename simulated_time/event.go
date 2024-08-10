@@ -6,17 +6,17 @@ import (
 	"time"
 )
 
-type event struct {
+type Event struct {
 	timing.Action
 	time.Time
 }
 
-func newEvent(action timing.Action, time time.Time) *event {
+func NewEvent(action timing.Action, time time.Time) *Event {
 	if action == nil {
 		panic("action can't be nil")
 	}
 
-	return &event{
+	return &Event{
 		Action: action,
 		Time:   time,
 	}

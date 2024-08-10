@@ -41,7 +41,7 @@ func Test_newSingleEventGenerator(t *testing.T) {
 				ctx:        context.Background(),
 			},
 			want: &singleEventGenerator{
-				event: &event{
+				Event: &Event{
 					Action: timing.NewMockAction(t),
 					Time:   time.Time{},
 				},
@@ -72,14 +72,14 @@ func Test_singleEventStream_pop(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		event *event
+		event *Event
 		ctx   context.Context
 	}
 
 	tests := []struct {
 		name         string
 		fields       fields
-		want         *event
+		want         *Event
 		requirePanic bool
 	}{
 		{
@@ -93,10 +93,10 @@ func Test_singleEventStream_pop(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}),
 				ctx:   context.Background(),
 			},
-			want: newEvent(timing.NewMockAction(t), time.Time{}),
+			want: NewEvent(timing.NewMockAction(t), time.Time{}),
 		},
 	}
 
@@ -105,7 +105,7 @@ func Test_singleEventStream_pop(t *testing.T) {
 			t.Parallel()
 
 			s := &singleEventGenerator{
-				event: tt.fields.event,
+				Event: tt.fields.event,
 				ctx:   tt.fields.ctx,
 			}
 
@@ -133,14 +133,14 @@ func Test_singleEventStream_peek(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		event *event
+		event *Event
 		ctx   context.Context
 	}
 
 	tests := []struct {
 		name         string
 		fields       fields
-		want         event
+		want         Event
 		requirePanic bool
 	}{
 		{
@@ -154,10 +154,10 @@ func Test_singleEventStream_peek(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}),
 				ctx:   context.Background(),
 			},
-			want: *newEvent(timing.NewMockAction(t), time.Time{}),
+			want: *NewEvent(timing.NewMockAction(t), time.Time{}),
 		},
 	}
 
@@ -166,7 +166,7 @@ func Test_singleEventStream_peek(t *testing.T) {
 			t.Parallel()
 
 			s := &singleEventGenerator{
-				event: tt.fields.event,
+				Event: tt.fields.event,
 				ctx:   tt.fields.ctx,
 			}
 
@@ -190,7 +190,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		event *event
+		event *Event
 		ctx   context.Context
 	}
 
@@ -213,7 +213,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 		{
 			name: "context is done",
 			fields: fields{
-				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}),
 				ctx:   ctx,
 			},
 			want: true,
@@ -221,7 +221,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 		{
 			name: "not finished",
 			fields: fields{
-				event: newEvent(timing.NewMockAction(t), time.Time{}),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}),
 				ctx:   context.Background(),
 			},
 			want: false,
@@ -233,7 +233,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 			t.Parallel()
 
 			s := &singleEventGenerator{
-				event: tt.fields.event,
+				Event: tt.fields.event,
 				ctx:   tt.fields.ctx,
 			}
 

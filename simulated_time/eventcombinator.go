@@ -39,7 +39,7 @@ func (e *eventCombinator) add(generator EventGenerator) {
 	e.sortActiveGenerators()
 }
 
-func (e *eventCombinator) Pop() *event {
+func (e *eventCombinator) Pop() *Event {
 	if e.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
@@ -56,7 +56,7 @@ func (e *eventCombinator) Pop() *event {
 	return nextEvent
 }
 
-func (e *eventCombinator) Peek() event {
+func (e *eventCombinator) Peek() Event {
 	if e.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}

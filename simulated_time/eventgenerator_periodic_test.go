@@ -96,7 +96,7 @@ func Test_newPeriodicEventGenerator(t *testing.T) {
 				to:       ptr(time.Time{}.Add(2 * time.Second)),
 				interval: time.Second,
 
-				currentEvent: &event{
+				currentEvent: &Event{
 					Action: timing.NewMockAction(t),
 					Time:   time.Time{}.Add(time.Second),
 				},
@@ -132,14 +132,14 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 		from         time.Time
 		to           *time.Time
 		interval     time.Duration
-		currentEvent *event
+		currentEvent *Event
 		ctx          context.Context
 	}
 
 	tests := []struct {
 		name            string
 		fields          fields
-		want            *event
+		want            *Event
 		requirePanic    bool
 		requireFinished bool
 	}{
@@ -150,7 +150,7 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
 				ctx:          context.Background(),
 			},
 			requirePanic: true,
@@ -162,10 +162,10 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				from:         time.Time{},
 				to:           nil,
 				interval:     time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
 				ctx:          context.Background(),
 			},
-			want: newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
+			want: NewEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
 		},
 		{
 			name: "success, not finished 2",
@@ -174,10 +174,10 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(40*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(40*time.Second)),
 				ctx:          context.Background(),
 			},
-			want: newEvent(timing.NewMockAction(t), time.Time{}.Add(40*time.Second)),
+			want: NewEvent(timing.NewMockAction(t), time.Time{}.Add(40*time.Second)),
 		},
 		{
 			name: "success, finished",
@@ -186,10 +186,10 @@ func Test_periodicEventGenerator_pop(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(50*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(50*time.Second)),
 				ctx:          context.Background(),
 			},
-			want:            newEvent(timing.NewMockAction(t), time.Time{}.Add(50*time.Second)),
+			want:            NewEvent(timing.NewMockAction(t), time.Time{}.Add(50*time.Second)),
 			requireFinished: true,
 		},
 	}
@@ -234,14 +234,14 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 		from         time.Time
 		to           *time.Time
 		interval     time.Duration
-		currentEvent *event
+		currentEvent *Event
 		ctx          context.Context
 	}
 
 	tests := []struct {
 		name         string
 		fields       fields
-		want         event
+		want         Event
 		requirePanic bool
 	}{
 		{
@@ -251,7 +251,7 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
 				ctx:          context.Background(),
 			},
 			requirePanic: true,
@@ -263,10 +263,10 @@ func Test_periodicEventGenerator_peek(t *testing.T) {
 				from:         time.Time{},
 				to:           nil,
 				interval:     time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
 				ctx:          context.Background(),
 			},
-			want: *newEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
+			want: *NewEvent(timing.NewMockAction(t), time.Time{}.Add(time.Second)),
 		},
 	}
 
@@ -307,7 +307,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 		from         time.Time
 		to           *time.Time
 		interval     time.Duration
-		currentEvent *event
+		currentEvent *Event
 		ctx          context.Context
 	}
 
@@ -326,7 +326,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(45*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(45*time.Second)),
 				ctx:          ctx,
 			},
 			want: true,
@@ -338,7 +338,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 				from:         time.Time{},
 				to:           nil,
 				interval:     0,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}),
 				ctx:          context.Background(),
 			},
 			want: false,
@@ -350,7 +350,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(55*time.Second)),
 				ctx:          context.Background(),
 			},
 			want: true,
@@ -362,7 +362,7 @@ func Test_periodicEventGenerator_finished(t *testing.T) {
 				from:         time.Time{},
 				to:           ptr(time.Time{}.Add(time.Minute)),
 				interval:     10 * time.Second,
-				currentEvent: newEvent(timing.NewMockAction(t), time.Time{}.Add(45*time.Second)),
+				currentEvent: NewEvent(timing.NewMockAction(t), time.Time{}.Add(45*time.Second)),
 				ctx:          context.Background(),
 			},
 			want: false,

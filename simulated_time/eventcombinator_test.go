@@ -72,7 +72,7 @@ func Test_newEventCombinator(t *testing.T) {
 					Once()
 				mockEventGenerator1.EXPECT().
 					Peek().
-					Return(event{
+					Return(Event{
 						Action: timing.NewMockAction(t),
 						Time:   time.Time{},
 					}).
@@ -85,7 +85,7 @@ func Test_newEventCombinator(t *testing.T) {
 					Once()
 				mockEventGenerator2.EXPECT().
 					Peek().
-					Return(event{
+					Return(Event{
 						Action: timing.NewMockAction(t),
 						Time:   time.Time{}.Add(time.Second),
 					}).
@@ -204,7 +204,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 		name              string
 		fields            fields
 		finishesGenerator bool
-		want              *event
+		want              *Event
 		requirePanic      bool
 	}{
 		{
@@ -232,7 +232,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 				},
 			},
 			finishesGenerator: false,
-			want: &event{
+			want: &Event{
 				Action: timing.NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
 			},
@@ -250,7 +250,7 @@ func Test_eventCombinator_pop(t *testing.T) {
 				},
 			},
 			finishesGenerator: true,
-			want: &event{
+			want: &Event{
 				Action: timing.NewMockAction(t),
 				Time:   time.Time{},
 			},
@@ -300,7 +300,7 @@ func Test_eventCombinator_peek(t *testing.T) {
 	tests := []struct {
 		name         string
 		fields       fields
-		want         event
+		want         Event
 		requirePanic bool
 	}{
 		{
@@ -327,7 +327,7 @@ func Test_eventCombinator_peek(t *testing.T) {
 					return make([]EventGenerator, 0)
 				},
 			},
-			want: event{
+			want: Event{
 				Action: timing.NewMockAction(t),
 				Time:   time.Time{}.Add(time.Second),
 			},

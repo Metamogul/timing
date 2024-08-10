@@ -19,7 +19,7 @@ func Test_newEvent(t *testing.T) {
 	tests := []struct {
 		name         string
 		args         args
-		want         *event
+		want         *Event
 		requirePanic bool
 	}{
 		{
@@ -36,7 +36,7 @@ func Test_newEvent(t *testing.T) {
 				action:     timing.NewMockAction(t),
 				actionTime: time.Time{},
 			},
-			want: &event{
+			want: &Event{
 				Action: timing.NewMockAction(t),
 				Time:   time.Time{},
 			},
@@ -47,13 +47,13 @@ func Test_newEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = newEvent(tt.args.action, tt.args.actionTime)
+					_ = NewEvent(tt.args.action, tt.args.actionTime)
 				})
 				return
 			}
 
-			if got := newEvent(tt.args.action, tt.args.actionTime); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newEvent() = %v, want %v", got, tt.want)
+			if got := NewEvent(tt.args.action, tt.args.actionTime); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewEvent() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -64,7 +64,7 @@ func Test_event_perform(t *testing.T) {
 
 	clockArg := newClock(time.Now())
 
-	e := &event{
+	e := &Event{
 		Action: func() timing.Action {
 			mockedAction := timing.NewMockAction(t)
 			mockedAction.EXPECT().

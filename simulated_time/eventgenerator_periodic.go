@@ -12,7 +12,7 @@ type periodicEventGenerator struct {
 	to       *time.Time
 	interval time.Duration
 
-	currentEvent *event
+	currentEvent *Event
 
 	ctx context.Context
 }
@@ -40,7 +40,7 @@ func newPeriodicEventGenerator(
 		panic("interval must be shorter than timespan given by from and to")
 	}
 
-	firstEvent := newEvent(action, from.Add(interval))
+	firstEvent := NewEvent(action, from.Add(interval))
 
 	return &periodicEventGenerator{
 		action:   action,
@@ -54,17 +54,17 @@ func newPeriodicEventGenerator(
 	}
 }
 
-func (p *periodicEventGenerator) Pop() *event {
+func (p *periodicEventGenerator) Pop() *Event {
 	if p.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
 
-	defer func() { p.currentEvent = newEvent(p.action, p.currentEvent.Time.Add(p.interval)) }()
+	defer func() { p.currentEvent = NewEvent(p.action, p.currentEvent.Time.Add(p.interval)) }()
 
 	return p.currentEvent
 }
 
-func (p *periodicEventGenerator) Peek() event {
+func (p *periodicEventGenerator) Peek() Event {
 	if p.Finished() {
 		panic(ErrEventGeneratorFinished)
 	}
