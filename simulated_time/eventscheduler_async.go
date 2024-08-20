@@ -2,9 +2,10 @@ package simulated_time
 
 import (
 	"context"
-	"github.com/metamogul/timing"
 	"sync"
 	"time"
+
+	"github.com/metamogul/timing"
 )
 
 type AsyncEventScheduler struct {
@@ -16,8 +17,8 @@ type AsyncEventScheduler struct {
 	wg sync.WaitGroup
 }
 
-func NewAsyncEventScheduler(now time.Time) *SerialEventScheduler {
-	return &SerialEventScheduler{
+func NewAsyncEventScheduler(now time.Time) *AsyncEventScheduler {
+	return &AsyncEventScheduler{
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(),
 	}

@@ -2,13 +2,14 @@ package simulated_time
 
 import (
 	"context"
-	"github.com/metamogul/timing"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"slices"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/metamogul/timing"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewSerialEventScheduler(t *testing.T) {
@@ -19,6 +20,7 @@ func TestNewSerialEventScheduler(t *testing.T) {
 	newEventScheduler := NewSerialEventScheduler(now)
 
 	require.NotNil(t, newEventScheduler)
+	require.IsType(t, &SerialEventScheduler{}, newEventScheduler)
 
 	require.NotNil(t, newEventScheduler.clock)
 	require.Equal(t, now, newEventScheduler.Now())
