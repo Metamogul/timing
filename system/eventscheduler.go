@@ -22,7 +22,7 @@ func (e *EventScheduler) PerformNow(action timing.Action, ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			action.Perform(e.Clock)
+			action.Perform(newActionContext(ctx, e.Clock))
 		}
 	}()
 }
@@ -31,7 +31,7 @@ func (e *EventScheduler) PerformAfter(action timing.Action, duration time.Durati
 	go func() {
 		select {
 		case <-time.After(duration):
-			action.Perform(e.Clock)
+			action.Perform(newActionContext(ctx, e.Clock))
 		case <-ctx.Done():
 			return
 		}
@@ -52,7 +52,7 @@ func (e *EventScheduler) PerformRepeatedly(action timing.Action, until *time.Tim
 		for {
 			select {
 			case <-ticker.C:
-				action.Perform(Clock{})
+				action.Perform(newActionContext(ctx, e.Clock))
 			case <-timer.C:
 				return
 			case <-ctx.Done():

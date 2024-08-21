@@ -39,11 +39,11 @@ func TestSerialEventScheduler_Forward(t *testing.T) {
 	longRunningAction1 := timing.NewMockAction(t)
 	longRunningAction1.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(100 * time.Millisecond)
 
 			mu.Lock()
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 			mu.Unlock()
 		}).
 		Once()
@@ -51,11 +51,11 @@ func TestSerialEventScheduler_Forward(t *testing.T) {
 	longRunningAction2 := timing.NewMockAction(t)
 	longRunningAction2.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(50 * time.Millisecond)
 
 			mu.Lock()
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 			mu.Unlock()
 		}).
 		Once()
@@ -93,17 +93,17 @@ func TestSerialEventScheduler_Forward_RecursiveScheduling(t *testing.T) {
 	innerAction := timing.NewMockAction(t)
 	innerAction.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
-			eventTimes = append(eventTimes, clock.Now())
+		Run(func(ctx timing.ActionContext) {
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 		}).
 		Once()
 
 	outerAction := timing.NewMockAction(t)
 	outerAction.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			s.PerformAfter(innerAction, time.Second, context.Background())
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 		}).
 		Once()
 
@@ -183,18 +183,18 @@ func TestSerialEventScheduler_ForwardToNextEvent(t *testing.T) {
 	longRunningAction1 := timing.NewMockAction(t)
 	longRunningAction1.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(100 * time.Millisecond)
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 		}).
 		Once()
 
 	longRunningAction2 := timing.NewMockAction(t)
 	longRunningAction2.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(50 * time.Millisecond)
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 		}).
 		Once()
 

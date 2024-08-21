@@ -11,110 +11,111 @@ import (
 func TestEventScheduler_PerformNow(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	clock := Clock{}
-	s := &EventScheduler{Clock: clock}
 
 	wg := &sync.WaitGroup{}
 
 	mockAction := timing.NewMockAction(t)
 	mockAction.EXPECT().
-		Perform(clock).
-		Run(func(timing.Clock) { wg.Done() }).
+		Perform(newActionContext(ctx, clock)).
+		Run(func(timing.ActionContext) { wg.Done() }).
 		Once()
 
+	eventSchedulerUnderTest := &EventScheduler{Clock: clock}
 	wg.Add(1)
-	s.PerformNow(mockAction, context.Background())
+	eventSchedulerUnderTest.PerformNow(mockAction, ctx)
 	wg.Wait()
 }
 
 func TestEventScheduler_PerformNow_cancelled(t *testing.T) {
 	t.Parallel()
 
-	clock := Clock{}
-	s := &EventScheduler{Clock: clock}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+	clock := Clock{}
 
-	s.PerformNow(timing.NewMockAction(t), ctx)
+	eventSchedulerUnderTest := &EventScheduler{Clock: clock}
+	eventSchedulerUnderTest.PerformNow(timing.NewMockAction(t), ctx)
 	time.Sleep(2 * time.Millisecond)
 }
 
 func TestEventScheduler_PerformAfter(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	clock := Clock{}
-	s := &EventScheduler{Clock: clock}
 
 	wg := &sync.WaitGroup{}
 
 	mockAction := timing.NewMockAction(t)
 	mockAction.EXPECT().
-		Perform(clock).
-		Run(func(timing.Clock) { wg.Done() }).
+		Perform(newActionContext(ctx, clock)).
+		Run(func(timing.ActionContext) { wg.Done() }).
 		Once()
 
+	eventSchedulerUnderTest := &EventScheduler{Clock: clock}
 	wg.Add(1)
-	s.PerformAfter(mockAction, time.Millisecond, context.Background())
+	eventSchedulerUnderTest.PerformAfter(mockAction, time.Millisecond, ctx)
 	wg.Wait()
 }
 
 func TestEventScheduler_PerformAfter_cancelled(t *testing.T) {
 	t.Parallel()
 
-	clock := Clock{}
-	s := &EventScheduler{Clock: clock}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+	clock := Clock{}
 
-	s.PerformAfter(timing.NewMockAction(t), time.Millisecond, ctx)
+	eventSchedulerUnderTest := &EventScheduler{Clock: clock}
+	eventSchedulerUnderTest.PerformAfter(timing.NewMockAction(t), time.Millisecond, ctx)
 	time.Sleep(2 * time.Millisecond)
 }
 
 func TestEventScheduler_PerformRepeatedly_until(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	clock := Clock{}
-	s := &EventScheduler{Clock: Clock{}}
 
 	wg := &sync.WaitGroup{}
 
 	mockAction := timing.NewMockAction(t)
 	mockAction.EXPECT().
-		Perform(clock).
-		Run(func(timing.Clock) { wg.Done() }).
+		Perform(newActionContext(ctx, clock)).
+		Run(func(timing.ActionContext) { wg.Done() }).
 		Twice()
 
+	eventSchedulerUnderTest := &EventScheduler{Clock: Clock{}}
 	wg.Add(2)
-	s.PerformRepeatedly(mockAction, ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond, context.Background())
+	eventSchedulerUnderTest.PerformRepeatedly(mockAction, ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond, ctx)
 	wg.Wait()
 }
 
 func TestEventScheduler_PerformRepeatedly_indefinitely(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	clock := Clock{}
-	s := &EventScheduler{Clock: Clock{}}
 
 	mockAction := timing.NewMockAction(t)
 	mockAction.EXPECT().
-		Perform(clock).
+		Perform(newActionContext(ctx, clock)).
 		Twice()
 
-	s.PerformRepeatedly(mockAction, nil, time.Millisecond, context.Background())
+	eventSchedulerUnderTest := &EventScheduler{Clock: Clock{}}
+	eventSchedulerUnderTest.PerformRepeatedly(mockAction, nil, time.Millisecond, ctx)
 	time.Sleep(3 * time.Millisecond)
 }
 
 func TestEventScheduler_PerformRepeatedly_cancelled(t *testing.T) {
 	t.Parallel()
 
-	clock := Clock{}
-	s := &EventScheduler{Clock: Clock{}}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+	clock := Clock{}
 
-	s.PerformRepeatedly(timing.NewMockAction(t), ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond, ctx)
+	eventSchedulerUnderTest := &EventScheduler{Clock: Clock{}}
+	eventSchedulerUnderTest.PerformRepeatedly(timing.NewMockAction(t), ptr(clock.Now().Add(3*time.Millisecond)), time.Millisecond, ctx)
 	time.Sleep(2 * time.Millisecond)
 }

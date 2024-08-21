@@ -2,6 +2,7 @@ package simulated_time
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -38,11 +39,11 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 	longRunningAction1 := timing.NewMockAction(t)
 	longRunningAction1.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(100 * time.Millisecond)
 
 			mu.Lock()
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 			mu.Unlock()
 		}).
 		Once()
@@ -50,11 +51,11 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 	longRunningAction2 := timing.NewMockAction(t)
 	longRunningAction2.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(50 * time.Millisecond)
 
 			mu.Lock()
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 			mu.Unlock()
 		}).
 		Once()
@@ -73,6 +74,46 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 
 	require.Equal(t, now.Add(2*time.Millisecond), eventTimes[0])
 	require.Equal(t, now.Add(1*time.Millisecond), eventTimes[1])
+}
+
+func TestAsyncEventScheduler_Forward_RecursiveScheduling(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	eventTimes := make([]time.Time, 0)
+
+	s := &AsyncEventScheduler{
+		clock:           newClock(now),
+		eventGenerators: newEventCombinator(),
+	}
+
+	innerAction := timing.NewMockAction(t)
+	innerAction.EXPECT().
+		Perform(mock.Anything).
+		Run(func(ctx timing.ActionContext) {
+			eventTimes = append(eventTimes, ctx.Clock().Now())
+		}).
+		Once()
+
+	outerAction := timing.NewMockAction(t)
+	outerAction.EXPECT().
+		Perform(mock.Anything).
+		Run(func(ctx timing.ActionContext) {
+			s.PerformAfter(innerAction, time.Second, context.Background())
+			ctx.DoneSchedulingNewEvents()
+			eventTimes = append(eventTimes, ctx.Clock().Now())
+		}).
+		Once()
+
+	s.PerformAfter(NewSchedulingAction(outerAction), time.Second, context.Background())
+
+	s.Forward(3 * time.Second)
+
+	sorted := slices.IsSortedFunc(eventTimes, func(a, b time.Time) int {
+		return a.Compare(b)
+	})
+	require.True(t, sorted)
 }
 
 func TestAsyncEventScheduler_performNextEvent(t *testing.T) {
@@ -143,11 +184,11 @@ func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
 	longRunningAction1 := timing.NewMockAction(t)
 	longRunningAction1.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(100 * time.Millisecond)
 
 			mu.Lock()
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 			mu.Unlock()
 		}).
 		Once()
@@ -155,11 +196,11 @@ func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
 	longRunningAction2 := timing.NewMockAction(t)
 	longRunningAction2.EXPECT().
 		Perform(mock.Anything).
-		Run(func(clock timing.Clock) {
+		Run(func(ctx timing.ActionContext) {
 			time.Sleep(50 * time.Millisecond)
 
 			mu.Lock()
-			eventTimes = append(eventTimes, clock.Now())
+			eventTimes = append(eventTimes, ctx.Clock().Now())
 			mu.Unlock()
 		}).
 		Once()
@@ -173,6 +214,60 @@ func TestAsyncEventScheduler_ForwardToNextEvent(t *testing.T) {
 		clock:           newClock(now),
 		eventGenerators: newEventCombinator(eventGenerators...),
 	}
+
+	a.ForwardToNextEvent()
+	require.Len(t, eventTimes, 1)
+	require.Equal(t, now.Add(1*time.Second), eventTimes[0])
+	require.Equal(t, now.Add(1*time.Second), a.Now())
+
+	a.ForwardToNextEvent()
+	require.Len(t, eventTimes, 2)
+	require.Equal(t, now.Add(2*time.Second), eventTimes[1])
+	require.Equal(t, now.Add(2*time.Second), a.Now())
+}
+
+func TestAsyncEventScheduler_ForwardToNextEvent_SchedulingAction(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	mu := sync.Mutex{}
+	eventTimes := make([]time.Time, 0)
+
+	a := &AsyncEventScheduler{
+		clock: newClock(now),
+	}
+
+	innerAction := timing.NewMockAction(t)
+	innerAction.EXPECT().
+		Perform(mock.Anything).
+		Run(func(ctx timing.ActionContext) {
+			mu.Lock()
+			eventTimes = append(eventTimes, ctx.Clock().Now())
+			mu.Unlock()
+		}).
+		Once()
+
+	outerAction := timing.NewMockAction(t)
+	outerAction.EXPECT().
+		Perform(mock.Anything).
+		Run(func(ctx timing.ActionContext) {
+			a.PerformAfter(innerAction, time.Second, ctx)
+			ctx.DoneSchedulingNewEvents()
+
+			mu.Lock()
+			eventTimes = append(eventTimes, ctx.Clock().Now())
+			mu.Unlock()
+		}).
+		Once()
+
+	outerSchedulingAction := NewSchedulingAction(outerAction)
+
+	eventGenerators := []EventGenerator{
+		newSingleEventGenerator(outerSchedulingAction, now.Add(1*time.Second), context.Background()),
+	}
+
+	a.eventGenerators = newEventCombinator(eventGenerators...)
 
 	a.ForwardToNextEvent()
 	require.Len(t, eventTimes, 1)

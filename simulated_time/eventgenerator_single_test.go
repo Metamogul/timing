@@ -18,6 +18,8 @@ func Test_newSingleEventGenerator(t *testing.T) {
 		ctx        context.Context
 	}
 
+	ctx := context.Background()
+
 	tests := []struct {
 		name         string
 		args         args
@@ -29,7 +31,7 @@ func Test_newSingleEventGenerator(t *testing.T) {
 			args: args{
 				action:     nil,
 				actionTime: time.Time{},
-				ctx:        context.Background(),
+				ctx:        ctx,
 			},
 			requirePanic: true,
 		},
@@ -38,14 +40,15 @@ func Test_newSingleEventGenerator(t *testing.T) {
 			args: args{
 				action:     timing.NewMockAction(t),
 				actionTime: time.Time{},
-				ctx:        context.Background(),
+				ctx:        ctx,
 			},
 			want: &singleEventGenerator{
 				Event: &Event{
-					Action: timing.NewMockAction(t),
-					Time:   time.Time{},
+					Action:  timing.NewMockAction(t),
+					Time:    time.Time{},
+					Context: ctx,
 				},
-				ctx: context.Background(),
+				ctx: ctx,
 			},
 		},
 	}
@@ -76,6 +79,8 @@ func Test_singleEventStream_pop(t *testing.T) {
 		ctx   context.Context
 	}
 
+	ctx := context.Background()
+
 	tests := []struct {
 		name         string
 		fields       fields
@@ -86,17 +91,17 @@ func Test_singleEventStream_pop(t *testing.T) {
 			name: "already finished",
 			fields: fields{
 				event: nil,
-				ctx:   context.Background(),
+				ctx:   ctx,
 			},
 			requirePanic: true,
 		},
 		{
 			name: "success",
 			fields: fields{
-				event: NewEvent(timing.NewMockAction(t), time.Time{}),
-				ctx:   context.Background(),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}, ctx),
+				ctx:   ctx,
 			},
-			want: NewEvent(timing.NewMockAction(t), time.Time{}),
+			want: NewEvent(timing.NewMockAction(t), time.Time{}, ctx),
 		},
 	}
 
@@ -137,6 +142,8 @@ func Test_singleEventStream_peek(t *testing.T) {
 		ctx   context.Context
 	}
 
+	ctx := context.Background()
+
 	tests := []struct {
 		name         string
 		fields       fields
@@ -147,17 +154,17 @@ func Test_singleEventStream_peek(t *testing.T) {
 			name: "already finished",
 			fields: fields{
 				event: nil,
-				ctx:   context.Background(),
+				ctx:   ctx,
 			},
 			requirePanic: true,
 		},
 		{
 			name: "success",
 			fields: fields{
-				event: NewEvent(timing.NewMockAction(t), time.Time{}),
-				ctx:   context.Background(),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}, ctx),
+				ctx:   ctx,
 			},
-			want: *NewEvent(timing.NewMockAction(t), time.Time{}),
+			want: *NewEvent(timing.NewMockAction(t), time.Time{}, ctx),
 		},
 	}
 
@@ -213,7 +220,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 		{
 			name: "context is done",
 			fields: fields{
-				event: NewEvent(timing.NewMockAction(t), time.Time{}),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}, ctx),
 				ctx:   ctx,
 			},
 			want: true,
@@ -221,7 +228,7 @@ func Test_singleEventStream_finished(t *testing.T) {
 		{
 			name: "not finished",
 			fields: fields{
-				event: NewEvent(timing.NewMockAction(t), time.Time{}),
+				event: NewEvent(timing.NewMockAction(t), time.Time{}, ctx),
 				ctx:   context.Background(),
 			},
 			want: false,

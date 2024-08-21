@@ -200,6 +200,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 		finishedGenerators func() []EventGenerator
 	}
 
+	ctx := context.Background()
+
 	tests := []struct {
 		name              string
 		fields            fields
@@ -223,8 +225,8 @@ func Test_eventCombinator_pop(t *testing.T) {
 			name: "success, generator not finished",
 			fields: fields{
 				activeGenerators: func() []EventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
-					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
+					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, ctx)
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, ctx)
 					return []EventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedGenerators: func() []EventGenerator {
@@ -233,8 +235,9 @@ func Test_eventCombinator_pop(t *testing.T) {
 			},
 			finishesGenerator: false,
 			want: &Event{
-				Action: timing.NewMockAction(t),
-				Time:   time.Time{}.Add(time.Second),
+				Action:  timing.NewMockAction(t),
+				Time:    time.Time{}.Add(time.Second),
+				Context: ctx,
 			},
 		},
 		{
@@ -251,8 +254,9 @@ func Test_eventCombinator_pop(t *testing.T) {
 			},
 			finishesGenerator: true,
 			want: &Event{
-				Action: timing.NewMockAction(t),
-				Time:   time.Time{},
+				Action:  timing.NewMockAction(t),
+				Time:    time.Time{},
+				Context: ctx,
 			},
 		},
 	}
@@ -297,6 +301,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 		finishedGenerators func() []EventGenerator
 	}
 
+	ctx := context.Background()
+
 	tests := []struct {
 		name         string
 		fields       fields
@@ -319,8 +325,8 @@ func Test_eventCombinator_peek(t *testing.T) {
 			name: "success",
 			fields: fields{
 				activeGenerators: func() []EventGenerator {
-					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, context.Background())
-					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, context.Background())
+					eventGenerator1 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Minute, ctx)
+					eventGenerator2 := newPeriodicEventGenerator(timing.NewMockAction(t), time.Time{}, nil, time.Second, ctx)
 					return []EventGenerator{eventGenerator1, eventGenerator2}
 				},
 				finishedGenerators: func() []EventGenerator {
@@ -328,8 +334,9 @@ func Test_eventCombinator_peek(t *testing.T) {
 				},
 			},
 			want: Event{
-				Action: timing.NewMockAction(t),
-				Time:   time.Time{}.Add(time.Second),
+				Action:  timing.NewMockAction(t),
+				Time:    time.Time{}.Add(time.Second),
+				Context: ctx,
 			},
 		},
 	}

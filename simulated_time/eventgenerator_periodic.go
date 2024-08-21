@@ -40,7 +40,7 @@ func newPeriodicEventGenerator(
 		panic("interval must be shorter than timespan given by from and to")
 	}
 
-	firstEvent := NewEvent(action, from.Add(interval))
+	firstEvent := NewEvent(action, from.Add(interval), ctx)
 
 	return &periodicEventGenerator{
 		action:   action,
@@ -59,7 +59,7 @@ func (p *periodicEventGenerator) Pop() *Event {
 		panic(ErrEventGeneratorFinished)
 	}
 
-	defer func() { p.currentEvent = NewEvent(p.action, p.currentEvent.Time.Add(p.interval)) }()
+	defer func() { p.currentEvent = NewEvent(p.action, p.currentEvent.Time.Add(p.interval), p.ctx) }()
 
 	return p.currentEvent
 }

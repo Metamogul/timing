@@ -1,6 +1,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -14,6 +15,7 @@ func Test_newEvent(t *testing.T) {
 	type args struct {
 		action     timing.Action
 		actionTime time.Time
+		ctx        context.Context
 	}
 
 	tests := []struct {
@@ -35,24 +37,28 @@ func Test_newEvent(t *testing.T) {
 			args: args{
 				action:     timing.NewMockAction(t),
 				actionTime: time.Time{},
+				ctx:        context.Background(),
 			},
 			want: &Event{
-				Action: timing.NewMockAction(t),
-				Time:   time.Time{},
+				Action:  timing.NewMockAction(t),
+				Time:    time.Time{},
+				Context: context.Background(),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if tt.requirePanic {
 				require.Panics(t, func() {
-					_ = NewEvent(tt.args.action, tt.args.actionTime)
+					_ = NewEvent(tt.args.action, tt.args.actionTime, tt.args.ctx)
 				})
 				return
 			}
 
-			if got := NewEvent(tt.args.action, tt.args.actionTime); !reflect.DeepEqual(got, tt.want) {
+			if got := NewEvent(tt.args.action, tt.args.actionTime, tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewEvent() = %v, want %v", got, tt.want)
 			}
 		})
@@ -62,13 +68,13 @@ func Test_newEvent(t *testing.T) {
 func Test_event_perform(t *testing.T) {
 	t.Parallel()
 
-	clockArg := newClock(time.Now())
+	actionContextArg := newActionContext(context.Background(), newClock(time.Now()), nil)
 
 	e := &Event{
 		Action: func() timing.Action {
 			mockedAction := timing.NewMockAction(t)
 			mockedAction.EXPECT().
-				Perform(clockArg).
+				Perform(actionContextArg).
 				Once()
 
 			return mockedAction
@@ -76,5 +82,5 @@ func Test_event_perform(t *testing.T) {
 		Time: time.Time{},
 	}
 
-	e.Perform(clockArg)
+	e.Perform(actionContextArg)
 }

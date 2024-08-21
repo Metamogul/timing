@@ -2,6 +2,7 @@
 package simulated_time
 
 import (
+	"context"
 	"github.com/metamogul/timing"
 	"time"
 )
@@ -9,15 +10,17 @@ import (
 type Event struct {
 	timing.Action
 	time.Time
+	context.Context
 }
 
-func NewEvent(action timing.Action, time time.Time) *Event {
+func NewEvent(action timing.Action, time time.Time, ctx context.Context) *Event {
 	if action == nil {
 		panic("action can't be nil")
 	}
 
 	return &Event{
-		Action: action,
-		Time:   time,
+		Action:  action,
+		Time:    time,
+		Context: ctx,
 	}
 }

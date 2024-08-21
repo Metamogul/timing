@@ -13,7 +13,7 @@ type singleEventGenerator struct {
 
 func newSingleEventGenerator(action timing.Action, time time.Time, ctx context.Context) *singleEventGenerator {
 	return &singleEventGenerator{
-		Event: NewEvent(action, time),
+		Event: NewEvent(action, time, ctx),
 		ctx:   ctx,
 	}
 }

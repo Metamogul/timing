@@ -9,8 +9,16 @@ type Clock interface {
 	Now() time.Time
 }
 
+const ActionContextClockKey = "actionContextClock"
+
+type ActionContext interface {
+	context.Context
+	Clock() Clock
+	DoneSchedulingNewEvents()
+}
+
 type Action interface {
-	Perform(Clock)
+	Perform(ActionContext)
 }
 
 type EventScheduler interface {

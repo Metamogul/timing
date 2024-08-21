@@ -40,7 +40,7 @@ func (s *SerialEventScheduler) performNextEvent(targetTime time.Time) (shouldCon
 	nextEvent := s.eventGenerators.Pop()
 	s.clock.set(nextEvent.Time)
 
-	nextEvent.Perform(s.clock.copy())
+	nextEvent.Perform(newActionContext(nextEvent.Context, s.clock.copy(), nil))
 
 	return true
 }
@@ -53,7 +53,7 @@ func (s *SerialEventScheduler) ForwardToNextEvent() {
 	nextEvent := s.eventGenerators.Pop()
 	s.clock.set(nextEvent.Time)
 
-	nextEvent.Perform(s.clock.copy())
+	nextEvent.Perform(newActionContext(nextEvent.Context, s.clock.copy(), nil))
 }
 
 func (s *SerialEventScheduler) PerformNow(action timing.Action, ctx context.Context) {

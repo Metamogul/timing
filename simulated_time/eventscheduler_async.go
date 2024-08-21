@@ -35,7 +35,6 @@ func (a *AsyncEventScheduler) Forward(interval time.Duration) {
 
 func (a *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldContinue bool) {
 	a.eventGeneratorsMu.RLock()
-	defer a.eventGeneratorsMu.RUnlock()
 
 	if a.eventGenerators.Finished() {
 		a.clock.set(targetTime)
@@ -48,35 +47,63 @@ func (a *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldCont
 	}
 
 	nextEvent := a.eventGenerators.Pop()
+
+	a.eventGeneratorsMu.RUnlock()
+
 	a.clock.set(nextEvent.Time)
 
 	currentClock := a.clock.copy()
 	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		nextEvent.Perform(currentClock)
-	}()
+
+	switch schedulingAction := nextEvent.Action.(type) {
+	case SchedulingAction:
+		go func() {
+			defer a.wg.Done()
+			nextEvent.Perform(newActionContext(nextEvent.Context, currentClock, schedulingAction.eventLoopBlocker))
+		}()
+
+		schedulingAction.WaitForEventSchedulingCompletion()
+	default:
+		go func() {
+			defer a.wg.Done()
+			nextEvent.Perform(newActionContext(nextEvent.Context, currentClock, nil))
+		}()
+	}
 
 	return true
 }
 
 func (a *AsyncEventScheduler) ForwardToNextEvent() {
 	a.eventGeneratorsMu.RLock()
-	defer a.eventGeneratorsMu.RUnlock()
 
 	if a.eventGenerators.Finished() {
 		return
 	}
 
 	nextEvent := a.eventGenerators.Pop()
+
+	a.eventGeneratorsMu.RUnlock()
+
 	a.clock.set(nextEvent.Time)
 
 	currentClock := a.clock.copy()
 	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		nextEvent.Perform(currentClock)
-	}()
+
+	switch schedulingAction := nextEvent.Action.(type) {
+	case SchedulingAction:
+		go func() {
+			defer a.wg.Done()
+			nextEvent.Perform(newActionContext(nextEvent.Context, currentClock, schedulingAction.eventLoopBlocker))
+		}()
+
+		schedulingAction.WaitForEventSchedulingCompletion()
+	default:
+		go func() {
+			defer a.wg.Done()
+			nextEvent.Perform(newActionContext(nextEvent.Context, currentClock, nil))
+		}()
+	}
+
 	a.wg.Wait()
 }
 
