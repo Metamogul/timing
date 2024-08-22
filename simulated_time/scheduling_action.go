@@ -11,15 +11,8 @@ type SchedulingAction struct {
 }
 
 func NewSchedulingAction(action timing.Action) SchedulingAction {
-	eventLoopBlocker := &sync.WaitGroup{}
-	eventLoopBlocker.Add(1)
-
 	return SchedulingAction{
 		Action:           action,
-		eventLoopBlocker: eventLoopBlocker,
+		eventLoopBlocker: &sync.WaitGroup{},
 	}
-}
-
-func (s SchedulingAction) WaitForEventSchedulingCompletion() {
-	s.eventLoopBlocker.Wait()
 }

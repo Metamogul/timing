@@ -59,12 +59,14 @@ func (a *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldCont
 
 	switch schedulingAction := nextEvent.Action.(type) {
 	case SchedulingAction:
+		schedulingAction.eventLoopBlocker.Add(1)
+
 		go func() {
 			defer a.wg.Done()
 			nextEvent.Perform(newActionContext(nextEvent.Context, currentClock, schedulingAction.eventLoopBlocker))
 		}()
 
-		schedulingAction.WaitForEventSchedulingCompletion()
+		schedulingAction.eventLoopBlocker.Wait()
 	default:
 		go func() {
 			defer a.wg.Done()
@@ -93,12 +95,14 @@ func (a *AsyncEventScheduler) ForwardToNextEvent() {
 
 	switch schedulingAction := nextEvent.Action.(type) {
 	case SchedulingAction:
+		schedulingAction.eventLoopBlocker.Add(1)
+
 		go func() {
 			defer a.wg.Done()
 			nextEvent.Perform(newActionContext(nextEvent.Context, currentClock, schedulingAction.eventLoopBlocker))
 		}()
 
-		schedulingAction.WaitForEventSchedulingCompletion()
+		schedulingAction.eventLoopBlocker.Wait()
 	default:
 		go func() {
 			defer a.wg.Done()

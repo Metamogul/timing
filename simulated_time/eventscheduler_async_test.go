@@ -76,6 +76,39 @@ func TestAsyncEventScheduler_Forward(t *testing.T) {
 	require.Equal(t, now.Add(1*time.Millisecond), eventTimes[1])
 }
 
+func TestAsyncEventScheduler_Forward_PeriodicSchedulingAction(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	eventTimes := make([]time.Time, 0)
+
+	action := timing.NewMockAction(t)
+	action.EXPECT().
+		Perform(mock.Anything).
+		Run(func(ctx timing.ActionContext) {
+			eventTimes = append(eventTimes, ctx.Clock().Now())
+			ctx.DoneSchedulingNewEvents()
+		}).
+		Times(3)
+	schedulingAction := NewSchedulingAction(action)
+
+	eventGenerators := []EventGenerator{
+		newPeriodicEventGenerator(schedulingAction, now, nil, time.Millisecond, context.Background()),
+	}
+
+	a := &AsyncEventScheduler{
+		clock:           newClock(now),
+		eventGenerators: newEventCombinator(eventGenerators...),
+	}
+
+	a.Forward(3 * time.Millisecond)
+
+	require.Equal(t, now.Add(1*time.Millisecond), eventTimes[0])
+	require.Equal(t, now.Add(2*time.Millisecond), eventTimes[1])
+	require.Equal(t, now.Add(3*time.Millisecond), eventTimes[2])
+}
+
 func TestAsyncEventScheduler_Forward_RecursiveScheduling(t *testing.T) {
 	t.Parallel()
 
