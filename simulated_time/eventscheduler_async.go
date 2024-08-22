@@ -38,11 +38,13 @@ func (a *AsyncEventScheduler) performNextEvent(targetTime time.Time) (shouldCont
 
 	if a.eventGenerators.Finished() {
 		a.clock.set(targetTime)
+		a.eventGeneratorsMu.RUnlock()
 		return false
 	}
 
 	if a.eventGenerators.Peek().After(targetTime) {
 		a.clock.set(targetTime)
+		a.eventGeneratorsMu.RUnlock()
 		return false
 	}
 
